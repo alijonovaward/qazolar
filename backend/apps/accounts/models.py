@@ -1,8 +1,14 @@
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
+from django.core.validators import RegexValidator
 from django.db import models
 
 from apps.core.models import TimeStampedModel
+
+username_validator = RegexValidator(
+    regex=r"^[a-zA-Z0-9_]{3,32}$",
+    message="Username faqat lotin harflari, raqam va pastki chiziqdan iborat bo'lishi kerak (3-32 belgi).",
+)
 
 
 class UserManager(BaseUserManager):
@@ -31,12 +37,29 @@ class User(AbstractBaseUser, PermissionsMixin):
         FEMALE = "female", "Ayol"
         UNSPECIFIED = "unspecified", "Ko'rsatilmagan"
 
+    class VisibilityLevel(models.TextChoices):
+        FULL = "full", "To'liq"
+        PERCENT_ONLY = "percent_only", "Faqat foiz"
+        NONE = "none", "Hech narsa"
+
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
+    # Public handle for apps.social (follow-by-username) — chosen by the user,
+    # not set at signup, so it's null until they pick one. Always stored
+    # lowercase (see UserSerializer.validate_username) so uniqueness doesn't
+    # depend on case.
+    username = models.CharField(
+        max_length=32, unique=True, null=True, blank=True, validators=[username_validator]
+    )
     gender = models.CharField(
         max_length=20, choices=Gender.choices, default=Gender.UNSPECIFIED
     )
     birth_date = models.DateField(null=True, blank=True)
+    # Applies to everyone who successfully follows this user (see apps.social) —
+    # a single global choice per user, not per-follower.
+    follower_visibility = models.CharField(
+        max_length=20, choices=VisibilityLevel.choices, default=VisibilityLevel.PERCENT_ONLY
+    )
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

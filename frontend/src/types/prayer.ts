@@ -13,13 +13,15 @@ export type SetupStatus = "consistent" | "owes_qazo";
 export interface InitialQazoSetup {
   prayer_type: PrayerType;
   status: SetupStatus;
-  manual_override_count: number | null;
+  hazar_manual_override_count: number | null;
+  qasr_manual_override_count: number | null;
   updated_at: string;
 }
 
 export interface QazoSetupPayload {
   status: SetupStatus;
-  manual_override_count: number | null;
+  hazar_manual_override_count: number | null;
+  qasr_manual_override_count: number | null;
 }
 
 export interface QazoRecord {

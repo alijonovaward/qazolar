@@ -6,7 +6,7 @@ import { ForecastCard } from "@/components/prayer/ForecastCard";
 import { OverallProgressCard } from "@/components/prayer/OverallProgressCard";
 import { PrayerRow } from "@/components/prayer/PrayerRow";
 import { StreakBadge } from "@/components/prayer/StreakBadge";
-import { useDailyLogsForDate, useIncrementDailyLog } from "@/hooks/useDailyLog";
+import { useIncrementDailyLog } from "@/hooks/useDailyLog";
 import { useForecast } from "@/hooks/useForecast";
 import { useMe } from "@/hooks/useMe";
 import { useQazoRecords, useQazoSummary } from "@/hooks/useQazoRecords";
@@ -22,7 +22,6 @@ export default function DashboardPage() {
   const { data: records, isLoading } = useQazoRecords();
   const { data: summary } = useQazoSummary();
   const { data: forecast } = useForecast();
-  const { data: todayLogs } = useDailyLogsForDate(today);
   const increment = useIncrementDailyLog(today);
 
   if (isLoading) {
@@ -30,7 +29,6 @@ export default function DashboardPage() {
   }
 
   const hasSetup = (records?.count ?? 0) > 0;
-  const logByCode = new Map((todayLogs ?? []).map((log) => [log.prayer_type.code, log]));
 
   function handleTap(prayerType: PrayerCode, field: DailyLogField) {
     increment.mutate({ prayer_type: prayerType, field });
@@ -63,15 +61,13 @@ export default function DashboardPage() {
       {hasSetup && (
         <div className="flex flex-col gap-2 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
           <p className="text-xs text-neutral-500">
-            Har bir qatorda: <span className="font-semibold text-red-600 dark:text-red-400">+</span>{" "}
-            qoldirdim · <span className="font-semibold text-emerald-600 dark:text-emerald-400">−</span>{" "}
-            o&apos;qidim
+            <span className="font-semibold text-red-600 dark:text-red-400">+</span> qoldirdim ·{" "}
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400">−</span> o&apos;qidim
           </p>
           {records!.results.map((record) => (
             <PrayerRow
               key={record.prayer_type.code}
               record={record}
-              todayLog={logByCode.get(record.prayer_type.code)}
               pending={increment.isPending}
               onTap={(field) => handleTap(record.prayer_type.code, field)}
             />

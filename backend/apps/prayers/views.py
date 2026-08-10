@@ -1,5 +1,4 @@
 from django.db.models import F, Sum
-from django.db.models.functions import TruncDay, TruncMonth, TruncWeek, TruncYear
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, status, viewsets
@@ -20,6 +19,7 @@ from .serializers import (
 from .services.daily_log import increment_daily_log
 from .services.forecast import current_streak, daily_rakat_rate, forecast_days_remaining, remaining_rakats
 from .services.setup import apply_setup
+from .services.stats import TREND_WINDOWS, TRUNC_FUNCS, remaining_trend
 
 
 class PrayerTypeListView(generics.ListAPIView):
@@ -129,11 +129,9 @@ class DailyGoalTodayView(APIView):
 
 
 class StatsView(APIView):
-    TRUNC_FUNCS = {"day": TruncDay, "week": TruncWeek, "month": TruncMonth, "year": TruncYear}
-
     def get(self, request):
         period = request.query_params.get("period", "week")
-        trunc_fn = self.TRUNC_FUNCS.get(period)
+        trunc_fn = TRUNC_FUNCS.get(period)
         if trunc_fn is None:
             return Response(
                 {"detail": "period 'day', 'week', 'month' yoki 'year' bo'lishi kerak"},
@@ -154,6 +152,24 @@ class StatsView(APIView):
             .order_by("bucket")
         )
         return Response(list(buckets))
+
+
+class RemainingTrendView(APIView):
+    """Total remaining qazo count as of the end of every bucket in a fixed
+    trailing window per tab (day=last 14 days, week=last 7, month=last 30,
+    year=last 52 weeks) — a continuous series (gaps carried forward flat) so
+    the chart always shows the real shape of the *recent* debt instead of
+    being flattened by unrelated history outside the window."""
+
+    def get(self, request):
+        period = request.query_params.get("period", "week")
+        if period not in TREND_WINDOWS:
+            return Response(
+                {"detail": "period 'day', 'week', 'month' yoki 'year' bo'lishi kerak"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        prayer_type_code = request.query_params.get("prayer_type", "all")
+        return Response(remaining_trend(request.user, period, prayer_type_code))
 
 
 class ForecastView(APIView):

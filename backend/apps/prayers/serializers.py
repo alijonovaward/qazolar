@@ -12,7 +12,7 @@ class PrayerTypeSerializer(serializers.ModelSerializer):
 class InitialQazoSetupWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = InitialQazoSetup
-        fields = ["status", "manual_override_count"]
+        fields = ["status", "hazar_manual_override_count", "qasr_manual_override_count"]
 
 
 class InitialQazoSetupReadSerializer(serializers.ModelSerializer):
@@ -20,7 +20,13 @@ class InitialQazoSetupReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InitialQazoSetup
-        fields = ["prayer_type", "status", "manual_override_count", "updated_at"]
+        fields = [
+            "prayer_type",
+            "status",
+            "hazar_manual_override_count",
+            "qasr_manual_override_count",
+            "updated_at",
+        ]
 
 
 class QazoRecordSerializer(serializers.ModelSerializer):

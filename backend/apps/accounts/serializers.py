@@ -43,8 +43,19 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "email", "gender", "birth_date", "created_at"]
+        fields = ["id", "email", "username", "gender", "birth_date", "follower_visibility", "created_at"]
         read_only_fields = ["id", "email", "created_at"]
+
+    def validate_username(self, value):
+        if value in (None, ""):
+            return None
+        value = value.lower()
+        existing = User.objects.filter(username=value)
+        if self.instance:
+            existing = existing.exclude(pk=self.instance.pk)
+        if existing.exists():
+            raise serializers.ValidationError("Bu username allaqachon band.")
+        return value
 
 
 class MenstruationPeriodSerializer(serializers.ModelSerializer):

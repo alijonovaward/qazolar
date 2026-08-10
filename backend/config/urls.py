@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/health/', health),
     path('api/', include('apps.accounts.urls')),
     path('api/', include('apps.prayers.urls')),
+    path('api/', include('apps.social.urls')),
 ]
 
 if settings.DEBUG:

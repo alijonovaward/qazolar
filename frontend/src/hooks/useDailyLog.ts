@@ -1,19 +1,9 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { apiClient } from "@/lib/api-client";
-import type { Paginated } from "@/types/api";
 import type { DailyLog, DailyLogIncrementPayload } from "@/types/prayer";
-
-export function useDailyLogsForDate(date: string) {
-  return useQuery({
-    queryKey: ["daily-logs", date],
-    queryFn: () =>
-      apiClient.get<Paginated<DailyLog>>(`/daily-logs/?date_from=${date}&date_to=${date}`),
-    select: (data) => data.results,
-  });
-}
 
 export function useIncrementDailyLog(date: string) {
   const queryClient = useQueryClient();

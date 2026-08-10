@@ -22,6 +22,10 @@ export function useUpsertQazoSetup() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["qazo-setup"] });
       queryClient.invalidateQueries({ queryKey: ["qazo-records"] });
+      // Editing setup changes the live QazoRecord total, which the forecast
+      // and both stats charts are derived from — without this they'd keep
+      // showing pre-edit numbers until something else happens to refetch.
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
     },
   });
 }

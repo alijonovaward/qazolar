@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.accounts",
     "apps.prayers",
+    "apps.social",
 ]
 
 MIDDLEWARE = [
@@ -124,6 +125,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "password-reset": "3/min",
         "login": "10/min",
+        "follow-request": "20/day",
     },
     "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.DefaultPagination",
     "PAGE_SIZE": 30,

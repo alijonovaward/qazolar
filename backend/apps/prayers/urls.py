@@ -15,6 +15,7 @@ urlpatterns = [
     path("daily-goal/today/", views.DailyGoalTodayView.as_view(), name="daily-goal-today"),
     path("stats/forecast/", views.ForecastView.as_view(), name="stats-forecast"),
     path("stats/streak/", views.StreakView.as_view(), name="stats-streak"),
+    path("stats/remaining-trend/", views.RemainingTrendView.as_view(), name="stats-remaining-trend"),
     path("stats/", views.StatsView.as_view(), name="stats"),
     path("", include(router.urls)),
 ]

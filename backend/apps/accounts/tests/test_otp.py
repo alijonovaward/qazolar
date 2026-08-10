@@ -109,6 +109,46 @@ class TestLoginEndpoint:
         assert client.get("/api/profile/me/").status_code == 401
 
 
+class TestUsernameField:
+    def _client(self, email="user@test.com"):
+        user = User.objects.create_user(email=email, password="a-strong-pw-93")
+        client = APIClient()
+        client.post("/api/auth/login/", {"email": email, "password": "a-strong-pw-93"}, format="json")
+        return client, user
+
+    def test_can_set_a_valid_username(self):
+        client, _ = self._client()
+        response = client.patch("/api/profile/me/", {"username": "Azamjon_1"}, format="json")
+        assert response.status_code == 200
+        # stored/returned lowercase regardless of how it was typed
+        assert response.data["username"] == "azamjon_1"
+
+    def test_rejects_invalid_characters(self):
+        client, _ = self._client()
+        response = client.patch("/api/profile/me/", {"username": "has a space"}, format="json")
+        assert response.status_code == 400
+
+    def test_rejects_duplicate_username_case_insensitively(self):
+        User.objects.create_user(email="taken@test.com", username="azamjon", password="a-strong-pw-93")
+        client, _ = self._client()
+        response = client.patch("/api/profile/me/", {"username": "AZAMJON"}, format="json")
+        assert response.status_code == 400
+
+    def test_can_clear_username_back_to_null(self):
+        client, user = self._client()
+        client.patch("/api/profile/me/", {"username": "azamjon"}, format="json")
+        response = client.patch("/api/profile/me/", {"username": ""}, format="json")
+        assert response.status_code == 200
+        user.refresh_from_db()
+        assert user.username is None
+
+    def test_two_users_can_both_have_no_username(self):
+        client_a, _ = self._client("a@test.com")
+        client_b, _ = self._client("b@test.com")
+        assert client_a.get("/api/profile/me/").data["username"] is None
+        assert client_b.get("/api/profile/me/").data["username"] is None
+
+
 @patch("apps.accounts.views.send_otp_email.delay")
 class TestPasswordReset:
     def test_reset_flow_changes_password(self, mock_send):

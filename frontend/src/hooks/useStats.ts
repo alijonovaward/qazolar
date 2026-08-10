@@ -19,3 +19,18 @@ export function useStats(period: StatsPeriod, prayerType: PrayerCode | "all") {
       apiClient.get<StatsBucket[]>(`/stats/?period=${period}&prayer_type=${prayerType}`),
   });
 }
+
+export interface RemainingTrendPoint {
+  bucket: string;
+  remaining: number;
+}
+
+export function useRemainingTrend(period: StatsPeriod, prayerType: PrayerCode | "all") {
+  return useQuery({
+    queryKey: ["stats", "remaining-trend", period, prayerType],
+    queryFn: () =>
+      apiClient.get<RemainingTrendPoint[]>(
+        `/stats/remaining-trend/?period=${period}&prayer_type=${prayerType}`
+      ),
+  });
+}

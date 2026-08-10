@@ -10,7 +10,7 @@ class PrayerTypeAdmin(admin.ModelAdmin):
 
 @admin.register(InitialQazoSetup)
 class InitialQazoSetupAdmin(admin.ModelAdmin):
-    list_display = ["user", "prayer_type", "status", "manual_override_count"]
+    list_display = ["user", "prayer_type", "status", "hazar_manual_override_count", "qasr_manual_override_count"]
     list_filter = ["status", "prayer_type"]
 
 

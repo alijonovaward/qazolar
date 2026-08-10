@@ -39,10 +39,15 @@ class InitialQazoSetup(TimeStampedModel):
     )
     prayer_type = models.ForeignKey(PrayerType, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=Status.choices)
-    manual_override_count = models.PositiveIntegerField(
+    hazar_manual_override_count = models.PositiveIntegerField(
         null=True,
         blank=True,
-        help_text="owes_qazo holatida taxminiy qazo soni. Berilmasa 0 dan boshlanadi va dashboard'dagi + tugmasi orqali kuzatiladi.",
+        help_text="owes_qazo holatida taxminiy oddiy (hazar) qazo soni. Berilmasa 0 dan boshlanadi.",
+    )
+    qasr_manual_override_count = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="owes_qazo holatida taxminiy safar (qasr) qazo soni. Berilmasa 0 dan boshlanadi.",
     )
 
     class Meta:

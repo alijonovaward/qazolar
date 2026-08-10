@@ -28,7 +28,8 @@ export function MenstruationPeriodsSection() {
     <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
       <h3 className="font-semibold">Hayz/nifos kunlari (ixtiyoriy, maxfiy)</h3>
       <p className="text-xs text-neutral-500">
-        Bu kunlar qazo hisobidan avtomatik chiqarib tashlanadi.
+        Bu ma&apos;lumot shaxsiy eslatma sifatida saqlanadi — qazo hisobiga avtomatik
+        ta&apos;sir qilmaydi, faqat siz uchun.
       </p>
 
       {data && data.results.length > 0 && (

@@ -57,16 +57,31 @@ class TestComputeInitialMissedCount:
         record = apply_setup(setup)
         assert record.total_missed == 0
 
-    def test_manual_override_count_is_used(self, prayer_types, user_male):
+    def test_hazar_manual_override_count_is_used(self, prayer_types, user_male):
         setup = InitialQazoSetup.objects.create(
             user=user_male,
             prayer_type=prayer_types["asr"],
             status=InitialQazoSetup.Status.OWES_QAZO,
-            manual_override_count=50,
+            hazar_manual_override_count=50,
         )
         record = apply_setup(setup)
         assert record.total_missed == 50
-        assert record.hazar_missed == 50  # setup never asks about travel — always hazar
+        assert record.hazar_missed == 50
+        assert record.qasr_missed == 0
+
+    def test_qasr_manual_override_count_is_used_independently(self, prayer_types, user_male):
+        # "200 oddiy + 20 safar" — both entered at setup time, tracked separately.
+        setup = InitialQazoSetup.objects.create(
+            user=user_male,
+            prayer_type=prayer_types["peshin"],
+            status=InitialQazoSetup.Status.OWES_QAZO,
+            hazar_manual_override_count=200,
+            qasr_manual_override_count=20,
+        )
+        record = apply_setup(setup)
+        assert record.hazar_missed == 200
+        assert record.qasr_missed == 20
+        assert record.total_missed == 220
 
     def test_owes_qazo_without_manual_count_starts_at_zero(self, prayer_types, user_male):
         # Most people don't know an exact number either — start fresh at 0 and
@@ -84,7 +99,7 @@ class TestComputeInitialMissedCount:
             user=user_male,
             prayer_type=prayer_types["peshin"],
             status=InitialQazoSetup.Status.OWES_QAZO,
-            manual_override_count=30,
+            hazar_manual_override_count=30,
         )
         apply_setup(setup)
         for _ in range(5):
@@ -100,7 +115,7 @@ class TestComputeInitialMissedCount:
             user=user_male,
             prayer_type=prayer_types["peshin"],
             status=InitialQazoSetup.Status.OWES_QAZO,
-            manual_override_count=30,
+            hazar_manual_override_count=30,
         )
         apply_setup(setup)
         increment_daily_log(user_male, prayer_types["peshin"], date(2026, 7, 29), "hazar_missed")
@@ -246,19 +261,19 @@ class TestForecast:
         )
         InitialQazoSetup.objects.create(
             user=user_male, prayer_type=peshin,
-            status=InitialQazoSetup.Status.OWES_QAZO, manual_override_count=30,
+            status=InitialQazoSetup.Status.OWES_QAZO, hazar_manual_override_count=30,
         )
         InitialQazoSetup.objects.create(
             user=user_male, prayer_type=asr,
-            status=InitialQazoSetup.Status.OWES_QAZO, manual_override_count=50,
+            status=InitialQazoSetup.Status.OWES_QAZO, hazar_manual_override_count=50,
         )
         InitialQazoSetup.objects.create(
             user=user_male, prayer_type=shom,
-            status=InitialQazoSetup.Status.OWES_QAZO, manual_override_count=90,
+            status=InitialQazoSetup.Status.OWES_QAZO, hazar_manual_override_count=90,
         )
         InitialQazoSetup.objects.create(
             user=user_male, prayer_type=xufton,
-            status=InitialQazoSetup.Status.OWES_QAZO, manual_override_count=30,
+            status=InitialQazoSetup.Status.OWES_QAZO, hazar_manual_override_count=30,
         )
         for setup in InitialQazoSetup.objects.filter(user=user_male):
             apply_setup(setup)
