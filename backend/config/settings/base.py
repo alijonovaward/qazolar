@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.prayers",
     "apps.social",
+    "apps.zikr",
 ]
 
 MIDDLEWARE = [
@@ -126,6 +127,7 @@ REST_FRAMEWORK = {
         "password-reset": "3/min",
         "login": "10/min",
         "follow-request": "20/day",
+        "zikr-sync": "30/min",
     },
     "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.DefaultPagination",
     "PAGE_SIZE": 30,
