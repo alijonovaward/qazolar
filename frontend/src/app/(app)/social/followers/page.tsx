@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { Avatar } from "@/components/social/Avatar";
 import { CountBadge } from "@/components/social/CountBadge";
 import { LoadMoreButton } from "@/components/social/LoadMoreButton";
 import { displayName } from "@/components/social/utils";
@@ -31,16 +32,19 @@ export default function FollowersPage() {
       ) : !results.length ? (
         <p className="text-sm text-neutral-500">Hali sizni hech kim kuzatmayapti.</p>
       ) : (
-        <div className="flex flex-col gap-2 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
-          <ul className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
+          <ul className="flex flex-col gap-3">
             {results.map((relation) => (
-              <li key={relation.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="min-w-0 truncate">{displayName(relation.follower)}</span>
+              <li key={relation.id} className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar label={displayName(relation.follower)} />
+                  <span className="min-w-0 truncate text-sm">{displayName(relation.follower)}</span>
+                </div>
                 <button
                   type="button"
                   onClick={() => remove.mutate(relation.id)}
                   disabled={remove.isPending}
-                  className="min-h-8 shrink-0 rounded-lg border border-red-300 px-2.5 text-xs font-medium text-red-600 disabled:opacity-50 dark:border-red-800 dark:text-red-400"
+                  className="min-h-8 shrink-0 rounded-full border border-red-300 px-2.5 text-xs font-medium text-red-600 disabled:opacity-50 dark:border-red-800 dark:text-red-400"
                 >
                   O&apos;chirish
                 </button>
