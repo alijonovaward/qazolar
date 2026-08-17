@@ -44,12 +44,22 @@ export default function ZikrCountPage() {
   const baseCount = overrideBase ?? zikr?.current_count ?? 0;
   const localDelta = overrideDelta ?? restoredDelta;
 
-  // Always-current mirror for the interval/unload handlers below, which
-  // would otherwise close over a stale `localDelta`.
+  // Always-current mirrors for the interval/unload handlers below, which
+  // would otherwise close over stale values.
   const localDeltaRef = useRef(localDelta);
   useEffect(() => {
     localDeltaRef.current = localDelta;
   }, [localDelta]);
+  const baseCountRef = useRef(baseCount);
+  useEffect(() => {
+    baseCountRef.current = baseCount;
+  }, [baseCount]);
+
+  // When a sync lands, the new total can jump by more than what *this*
+  // device just sent — other people tapping the same zikr in the same
+  // window get folded in too. Without calling that out, the number visibly
+  // moving on its own looks like a bug. Shown for ~3s then faded out.
+  const [othersBump, setOthersBump] = useState<{ amount: number; visible: boolean } | null>(null);
 
   const flush = useCallback(() => {
     const delta = localDeltaRef.current;
@@ -58,6 +68,14 @@ export default function ZikrCountPage() {
       { id: zikrId, delta },
       {
         onSuccess: (updated) => {
+          const expectedTotal = baseCountRef.current + delta;
+          const fromOthers = updated.current_count - expectedTotal;
+          if (fromOthers > 0) {
+            setOthersBump({ amount: fromOthers, visible: true });
+            setTimeout(() => setOthersBump((b) => (b ? { ...b, visible: false } : b)), 2300);
+            setTimeout(() => setOthersBump(null), 3000);
+          }
+
           setOverrideBase(updated.current_count);
           // Subtract exactly what was sent, not reset to 0 — any taps that
           // landed while this request was in flight stay counted.
@@ -73,7 +91,10 @@ export default function ZikrCountPage() {
         // tick (or the next tap) just retries with the same taps.
       }
     );
-  }, [syncMutate, zikrId, storageKey]);
+    // baseCountRef/localDeltaRef are stable ref objects — listed only to
+    // satisfy the compiler's dependency inference, not because their
+    // .current changing should ever re-create this callback.
+  }, [syncMutate, zikrId, storageKey, baseCountRef, localDeltaRef]);
 
   useEffect(() => {
     const interval = setInterval(flush, SYNC_INTERVAL_MS);
@@ -142,6 +163,15 @@ export default function ZikrCountPage() {
           Jami: {formatCount(displayedCount)} / {formatCount(zikr.target_count)} ·{" "}
           {zikr.participant_count} ishtirokchi{syncing && " · sinxronlanmoqda..."}
         </p>
+        {othersBump && (
+          <p
+            className={`text-xs font-medium text-emerald-600 transition-opacity duration-700 dark:text-emerald-400 ${
+              othersBump.visible ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            +{formatCount(othersBump.amount)} boshqa foydalanuvchilar bilan
+          </p>
+        )}
       </div>
 
       {/* On the bottom half of the screen — this is what gets tapped over
