@@ -41,7 +41,13 @@ export default function ZikrCountPage() {
   const [overrideBase, setOverrideBase] = useState<number | null>(null);
   const [overrideDelta, setOverrideDelta] = useState<number | null>(null);
 
-  const baseCount = overrideBase ?? zikr?.current_count ?? 0;
+  // Not a plain "override wins forever": useZikrList polls every 10s in the
+  // background too (see useZikr.ts), so other people's taps show up on
+  // their own even if this device never taps again. Whichever source has
+  // seen the higher number wins — the total only ever grows, so that's
+  // always the fresher one, whether it came from our own last sync
+  // response or from the background poll picking up someone else's.
+  const baseCount = Math.max(overrideBase ?? 0, zikr?.current_count ?? 0);
   const localDelta = overrideDelta ?? restoredDelta;
 
   // Always-current mirrors for the interval/unload handlers below, which
