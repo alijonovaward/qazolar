@@ -1,11 +1,9 @@
 "use client";
 
-import Link from "next/link";
-
 import { Avatar } from "@/components/social/Avatar";
-import { CountBadge } from "@/components/social/CountBadge";
 import { FolloweeProfileView } from "@/components/social/FolloweeProfileView";
 import { LoadMoreButton } from "@/components/social/LoadMoreButton";
+import { SocialPageHeader } from "@/components/social/SocialPageHeader";
 import { displayName } from "@/components/social/utils";
 import { useFollowing, useRemoveFollowRelation } from "@/hooks/useSocial";
 
@@ -18,15 +16,7 @@ export default function FollowingPage() {
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-semibold">Men kuzatayotganlarim</h1>
-          <CountBadge count={count} />
-        </div>
-        <Link href="/social" className="text-sm text-emerald-700 underline dark:text-emerald-400">
-          Do&apos;stlarga qaytish
-        </Link>
-      </div>
+      <SocialPageHeader title="Men kuzatayotganlarim" count={count} />
 
       {followingQuery.isLoading ? (
         <p className="text-sm text-neutral-500">Yuklanmoqda...</p>
