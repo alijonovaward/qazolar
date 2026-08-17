@@ -45,6 +45,25 @@ export default function ZikrListPage() {
                   {zikr.percent_complete}% · {formatCount(zikr.remaining)} qoldi
                 </span>
               </div>
+              <div className="flex items-center gap-1.5 text-xs text-neutral-400">
+                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
+                  <path
+                    d="M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM2 20c0-3.3 3.1-6 7-6s7 2.7 7 6"
+                    stroke="currentColor"
+                    strokeWidth={1.75}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M16 8c1.7 0 3 1.3 3 3s-1.3 3-3 3M18.5 14c2.6.4 4.5 1.9 4.5 4"
+                    stroke="currentColor"
+                    strokeWidth={1.75}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span>{formatCount(zikr.participant_count)} ishtirokchi</span>
+              </div>
             </Link>
           ))}
         </div>

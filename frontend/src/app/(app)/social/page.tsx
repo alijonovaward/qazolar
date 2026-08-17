@@ -146,7 +146,7 @@ export default function SocialPage() {
               type="text"
               value={followeeUsername}
               onChange={(event) => setFolloweeUsername(event.target.value)}
-              placeholder="dostim_username"
+              placeholder="username"
               className="min-h-11 w-full min-w-0 rounded-full border border-neutral-300 bg-transparent py-2 pl-8 pr-3 dark:border-neutral-700"
             />
           </div>
