@@ -76,26 +76,28 @@ export function UsernameCard({ username }: { username: string | null | undefined
           </div>
         </form>
       ) : (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-2">
           <span className="min-w-0 truncate text-lg font-semibold">
             {username ? `@${username}` : "Tanlanmagan"}
           </span>
-          {username && (
+          <div className="flex gap-2">
+            {username && (
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="min-h-9 shrink-0 rounded-lg border border-neutral-300 px-3 text-sm dark:border-neutral-700"
+              >
+                {copied ? "Nusxalandi" : "Nusxalash"}
+              </button>
+            )}
             <button
               type="button"
-              onClick={handleCopy}
+              onClick={startEditing}
               className="min-h-9 shrink-0 rounded-lg border border-neutral-300 px-3 text-sm dark:border-neutral-700"
             >
-              {copied ? "Nusxalandi" : "Nusxalash"}
+              {username ? "O'zgartirish" : "Tanlash"}
             </button>
-          )}
-          <button
-            type="button"
-            onClick={startEditing}
-            className="min-h-9 shrink-0 rounded-lg border border-neutral-300 px-3 text-sm dark:border-neutral-700"
-          >
-            {username ? "O'zgartirish" : "Tanlash"}
-          </button>
+          </div>
         </div>
       )}
       <p className="text-xs text-neutral-500">

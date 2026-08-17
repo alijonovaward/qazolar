@@ -17,7 +17,7 @@ export function LogoutButton() {
     <button
       type="button"
       onClick={handleLogout}
-      className="min-h-11 rounded-lg border border-neutral-300 px-3 text-sm dark:border-neutral-700"
+      className="min-h-11 rounded-lg border border-red-300 px-3 text-sm font-medium text-red-600 dark:border-red-800 dark:text-red-400"
     >
       Chiqish
     </button>
