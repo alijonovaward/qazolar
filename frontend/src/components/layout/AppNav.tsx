@@ -15,17 +15,17 @@ export function AppNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex gap-4 overflow-x-auto border-b border-neutral-200 px-4 text-sm dark:border-neutral-800">
+    <nav className="flex gap-2 overflow-x-auto border-b border-neutral-200 px-4 py-2 text-sm dark:border-neutral-800">
       {LINKS.map((link) => {
         const active = pathname === link.href;
         return (
           <Link
             key={link.href}
             href={link.href}
-            className={`flex min-h-11 shrink-0 items-center border-b-2 ${
+            className={`flex min-h-9 shrink-0 items-center rounded-full px-4 font-medium transition-colors ${
               active
-                ? "border-emerald-600 font-medium text-emerald-700 dark:text-emerald-400"
-                : "border-transparent text-neutral-500"
+                ? "bg-emerald-600 text-white"
+                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
             }`}
           >
             {link.label}

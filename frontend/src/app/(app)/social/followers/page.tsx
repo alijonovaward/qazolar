@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { CountBadge } from "@/components/social/CountBadge";
 import { LoadMoreButton } from "@/components/social/LoadMoreButton";
 import { displayName } from "@/components/social/utils";
 import { useFollowers, useRemoveFollowRelation } from "@/hooks/useSocial";
@@ -16,9 +17,10 @@ export default function FollowersPage() {
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">
-          Meni kuzatuvchilar{count != null && ` (${count})`}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-semibold">Meni kuzatuvchilar</h1>
+          <CountBadge count={count} />
+        </div>
         <Link href="/social" className="text-sm text-emerald-700 underline dark:text-emerald-400">
           Do&apos;stlarga qaytish
         </Link>
