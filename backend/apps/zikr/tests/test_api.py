@@ -101,15 +101,37 @@ class TestZikrSync:
         assert response.data["percent_complete"] == 25.0
         assert response.data["remaining"] == 750
 
-    def test_percent_never_exceeds_100_past_the_target(self, client_a, zikr):
+    def test_current_count_is_clamped_at_the_target(self, client_a, zikr):
         response = sync(client_a, zikr.id, 5000)  # well past target_count=1000
         assert response.data["percent_complete"] == 100.0
         assert response.data["remaining"] == 0
-        # the raw count itself isn't clamped — over-achieving is fine
-        assert response.data["current_count"] == 5000
+        assert response.data["current_count"] == 1000
 
-    def test_delta_is_capped_per_call(self, client_a, zikr):
-        response = sync(client_a, zikr.id, 999_999)
+    def test_a_batch_crossing_the_target_only_credits_the_remaining_capacity(
+        self, client_a, zikr, user_a
+    ):
+        sync(client_a, zikr.id, 990)
+        response = sync(client_a, zikr.id, 50)  # only 10 needed to hit 1000
+        assert response.data["current_count"] == 1000
+        # the user's own tally reflects what was actually credited, not the
+        # raw 50 they tried to add
+        assert UserZikrCount.objects.get(user=user_a, zikr=zikr).count == 1000
+
+    def test_sync_is_a_no_op_once_the_target_is_already_reached(self, client_a, zikr):
+        sync(client_a, zikr.id, 1000)
+        response = sync(client_a, zikr.id, 10)
+        assert response.data["current_count"] == 1000
+
+    def test_delta_is_capped_per_call(self, client_a):
+        # a target large enough that MAX_SYNC_DELTA, not the target, is the
+        # thing doing the clamping in this test
+        big_zikr = Zikr.objects.create(
+            arabic_text="سُبْحَانَ اللَّهِ",
+            transliteration="Subhanalloh",
+            translation="Alloh pok",
+            target_count=1_000_000,
+        )
+        response = sync(client_a, big_zikr.id, 999_999)
         assert response.data["current_count"] == 5000  # MAX_SYNC_DELTA
 
     def test_rejects_zero_or_negative_delta(self, client_a, zikr):

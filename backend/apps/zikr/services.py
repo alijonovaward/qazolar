@@ -14,13 +14,23 @@ def sync_zikr_count(user: User, zikr: Zikr, delta: int) -> Zikr:
     """Add `delta` taps to both the collective Zikr total and this user's own
     running contribution, atomically. Cumulative on both sides — never a
     blind overwrite — so concurrent syncs (e.g. two open tabs) just add up
-    instead of racing each other."""
+    instead of racing each other.
+
+    Never lets the collective total pass target_count — once the goal is
+    reached, nobody (this user included) can add any more, and the excess
+    from a batch that crosses the line is simply dropped, not credited to
+    anyone."""
     delta = max(min(delta, MAX_SYNC_DELTA), 0)
     if delta == 0:
         return zikr
 
     with transaction.atomic():
         locked = Zikr.objects.select_for_update().get(pk=zikr.pk)
+        capacity = max(locked.target_count - locked.current_count, 0)
+        delta = min(delta, capacity)
+        if delta == 0:
+            return locked
+
         locked.current_count += delta
         locked.save(update_fields=["current_count", "updated_at"])
 

@@ -90,12 +90,6 @@ export default function ZikrCountPage() {
     };
   }, [flush]);
 
-  function handleTap() {
-    const next = localDelta + 1;
-    localStorage.setItem(storageKey, String(next));
-    setOverrideDelta(next);
-  }
-
   if (isLoading) {
     return <p className="p-4 text-neutral-500">Yuklanmoqda...</p>;
   }
@@ -111,10 +105,21 @@ export default function ZikrCountPage() {
     );
   }
 
-  const displayedCount = baseCount + localDelta;
-  const percent =
-    zikr.target_count === 0 ? 100 : Math.min((displayedCount / zikr.target_count) * 100, 100);
+  // Once the collective goal is hit, nobody can add any more — the server
+  // enforces this too (see sync_zikr_count), this just stops new local taps
+  // from ever being buffered in the first place and caps what's shown so the
+  // number never visibly ticks past the target.
+  const isComplete = baseCount + localDelta >= zikr.target_count;
+  const displayedCount = Math.min(baseCount + localDelta, zikr.target_count);
+  const percent = zikr.target_count === 0 ? 100 : (displayedCount / zikr.target_count) * 100;
   const remaining = Math.max(zikr.target_count - displayedCount, 0);
+
+  function handleTap() {
+    if (isComplete) return;
+    const next = localDelta + 1;
+    localStorage.setItem(storageKey, String(next));
+    setOverrideDelta(next);
+  }
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4">
@@ -124,21 +129,6 @@ export default function ZikrCountPage() {
           Ro&apos;yxatga qaytish
         </Link>
       </div>
-
-      <button
-        type="button"
-        onClick={handleTap}
-        className="flex select-none flex-col items-center gap-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-8 text-center transition-colors active:bg-emerald-50 dark:border-neutral-800 dark:bg-neutral-900 dark:active:bg-emerald-950"
-      >
-        <span dir="rtl" className="text-3xl leading-relaxed">
-          {zikr.arabic_text}
-        </span>
-        <span className="text-sm text-neutral-500">{zikr.translation}</span>
-        <span className="text-5xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
-          {formatCount(displayedCount)}
-        </span>
-        <span className="text-xs text-neutral-400">Bosish uchun shu yerga teging</span>
-      </button>
 
       <div className="flex flex-col gap-2 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
         <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
@@ -153,6 +143,26 @@ export default function ZikrCountPage() {
           {zikr.participant_count} ishtirokchi{syncing && " · sinxronlanmoqda..."}
         </p>
       </div>
+
+      {/* On the bottom half of the screen — this is what gets tapped over
+          and over, so it belongs where a thumb comfortably reaches. */}
+      <button
+        type="button"
+        onClick={handleTap}
+        disabled={isComplete}
+        className="mt-4 flex select-none flex-col items-center gap-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-8 text-center transition-colors active:bg-emerald-50 disabled:cursor-default disabled:active:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:active:bg-emerald-950 dark:disabled:active:bg-neutral-900"
+      >
+        <span dir="rtl" className="text-3xl leading-relaxed">
+          {zikr.arabic_text}
+        </span>
+        <span className="text-sm text-neutral-500">{zikr.translation}</span>
+        <span className="text-5xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+          {formatCount(displayedCount)}
+        </span>
+        <span className="text-xs text-neutral-400">
+          {isComplete ? "Maqsadga yetdi ✅" : "Bosish uchun shu yerga teging"}
+        </span>
+      </button>
     </main>
   );
 }
