@@ -1,5 +1,6 @@
 "use client";
 
+import { LogoutButton } from "@/components/auth/LogoutButton";
 import { PersonalInfoCard } from "@/components/profile/PersonalInfoCard";
 import { UsernameCard } from "@/components/profile/UsernameCard";
 import { VisibilitySelector } from "@/components/profile/VisibilitySelector";
@@ -30,6 +31,8 @@ export default function ProfilePage() {
           <UsernameCard username={me.username} />
           <PersonalInfoCard gender={me.gender} birthDate={me.birth_date} />
           <VisibilitySelector value={me.follower_visibility} />
+
+          <LogoutButton />
         </>
       )}
     </main>

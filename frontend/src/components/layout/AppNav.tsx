@@ -9,7 +9,6 @@ const LINKS = [
   { href: "/zikr", label: "Zikrlar" },
   { href: "/social", label: "Do'stlar" },
   { href: "/setup", label: "Sozlash" },
-  { href: "/profile", label: "Profil" },
 ];
 
 export function AppNav() {

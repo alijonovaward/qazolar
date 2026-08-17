@@ -1,6 +1,6 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { LogoutButton } from "@/components/auth/LogoutButton";
 import { AppNav } from "@/components/layout/AppNav";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
@@ -11,7 +11,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <span className="font-semibold">QazoNamoz</span>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <LogoutButton />
+          {/* Profil va chiqish shu bitta joyga — /profile sahifasida
+              birgalikda turadi, alohida header-tugma emas. */}
+          <Link
+            href="/profile"
+            aria-label="Profil"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-neutral-300 text-lg dark:border-neutral-700"
+          >
+            👤
+          </Link>
         </div>
       </header>
       <AppNav />
