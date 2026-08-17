@@ -20,7 +20,7 @@ export function ForecastCard({ forecast }: { forecast: Forecast }) {
         <StatTile
           label="Kunlik tezlik"
           value={`${forecast.daily_rakat_rate.toFixed(1)} rakat`}
-          hint="so'nggi 30 kun"
+          hint="so'nggi 7 kun"
         />
         <StatTile
           label="Necha kunda tugaydi"

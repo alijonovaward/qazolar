@@ -7,7 +7,13 @@ from apps.accounts.models import User
 
 from ..models import DailyLog, QazoRecord
 
-DEFAULT_WINDOW_DAYS = 30
+# A 30-day average diluted the rate too much for it to feel relevant — one
+# active day out of 30 gives a rate 1/30th of what the user actually just
+# did, making "necha kunda tugaydi" balloon into an absurd number of days.
+# 7 days still smooths out a single big catch-up day (the reason for
+# averaging over calendar days at all — see daily_rakat_rate below) without
+# burying recent effort under a month of history.
+DEFAULT_WINDOW_DAYS = 7
 
 
 def daily_rakat_rate(user: User, window_days: int = DEFAULT_WINDOW_DAYS) -> float:
