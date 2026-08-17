@@ -37,8 +37,8 @@ export default function FollowingPage() {
                 key={relation.id}
                 className="flex flex-col gap-1 border-b border-neutral-100 pb-3 last:border-0 last:pb-0 dark:border-neutral-800"
               >
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{displayName(relation.followee)}</span>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                  <span className="min-w-0 truncate font-medium">{displayName(relation.followee)}</span>
                   <button
                     type="button"
                     onClick={() => remove.mutate(relation.id)}

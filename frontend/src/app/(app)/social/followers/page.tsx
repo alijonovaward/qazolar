@@ -32,8 +32,8 @@ export default function FollowersPage() {
         <div className="flex flex-col gap-2 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
           <ul className="flex flex-col gap-2">
             {results.map((relation) => (
-              <li key={relation.id} className="flex items-center justify-between text-sm">
-                <span>{displayName(relation.follower)}</span>
+              <li key={relation.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="min-w-0 truncate">{displayName(relation.follower)}</span>
                 <button
                   type="button"
                   onClick={() => remove.mutate(relation.id)}

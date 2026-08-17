@@ -110,9 +110,9 @@ export default function SocialPage() {
           <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">Kelgan so&apos;rovlar</h2>
           <ul className="flex flex-col gap-2">
             {incomingResults.map((request) => (
-              <li key={request.id} className="flex items-center justify-between text-sm">
-                <span>{displayName(request.follower)}</span>
-                <div className="flex gap-2">
+              <li key={request.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="min-w-0 truncate">{displayName(request.follower)}</span>
+                <div className="flex shrink-0 gap-2">
                   <button
                     type="button"
                     onClick={() => accept.mutate(request.id)}

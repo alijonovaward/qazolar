@@ -76,13 +76,15 @@ export function UsernameCard({ username }: { username: string | null | undefined
           </div>
         </form>
       ) : (
-        <div className="flex items-center gap-3">
-          <span className="text-lg font-semibold">{username ? `@${username}` : "Tanlanmagan"}</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="min-w-0 truncate text-lg font-semibold">
+            {username ? `@${username}` : "Tanlanmagan"}
+          </span>
           {username && (
             <button
               type="button"
               onClick={handleCopy}
-              className="min-h-9 rounded-lg border border-neutral-300 px-3 text-sm dark:border-neutral-700"
+              className="min-h-9 shrink-0 rounded-lg border border-neutral-300 px-3 text-sm dark:border-neutral-700"
             >
               {copied ? "Nusxalandi" : "Nusxalash"}
             </button>
@@ -90,7 +92,7 @@ export function UsernameCard({ username }: { username: string | null | undefined
           <button
             type="button"
             onClick={startEditing}
-            className="min-h-9 rounded-lg border border-neutral-300 px-3 text-sm dark:border-neutral-700"
+            className="min-h-9 shrink-0 rounded-lg border border-neutral-300 px-3 text-sm dark:border-neutral-700"
           >
             {username ? "O'zgartirish" : "Tanlash"}
           </button>
