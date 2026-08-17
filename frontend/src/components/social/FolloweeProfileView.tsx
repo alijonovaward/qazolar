@@ -20,8 +20,12 @@ function MiniPrayerRow({ record }: { record: QazoRecord }) {
       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
         <div className={`h-full ${color}`} style={{ width: `${record.percent_complete}%` }} />
       </div>
-      <span className="w-16 shrink-0 text-right text-xs tabular-nums text-neutral-500">
-        {record.remaining_count}/{record.total_missed}
+      {/* A raw "1095/1095" reads as noise for someone else's numbers you have
+          no context for — a percent next to the bar it's already
+          illustrating is unambiguous at a glance, unlike a fraction that
+          makes you do the division yourself. */}
+      <span className="w-10 shrink-0 text-right text-xs tabular-nums text-neutral-500">
+        {record.percent_complete}%
       </span>
     </div>
   );
