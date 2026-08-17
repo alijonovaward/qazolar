@@ -219,12 +219,12 @@ export default function SocialPage() {
             value={followeeUsername}
             onChange={(event) => setFolloweeUsername(event.target.value)}
             placeholder="dostim_username"
-            className="min-h-11 flex-1 rounded-lg border border-neutral-300 bg-transparent px-3 dark:border-neutral-700"
+            className="min-h-11 w-full min-w-0 flex-1 rounded-lg border border-neutral-300 bg-transparent px-3 dark:border-neutral-700"
           />
           <button
             type="submit"
             disabled={follow.isPending}
-            className="min-h-11 rounded-lg bg-emerald-600 px-4 font-medium text-white disabled:opacity-50"
+            className="min-h-11 shrink-0 rounded-lg bg-emerald-600 px-4 font-medium text-white disabled:opacity-50"
           >
             So&apos;rov yuborish
           </button>

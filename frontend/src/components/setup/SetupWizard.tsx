@@ -177,7 +177,7 @@ export function SetupWizard() {
             </p>
 
             <div className="flex gap-3">
-              <label className="flex flex-1 flex-col gap-1 text-sm">
+              <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
                 <span>{showQasrField ? "Oddiy" : "Qazo soni"}</span>
                 <input
                   type="number"
@@ -185,11 +185,11 @@ export function SetupWizard() {
                   value={form.hazar}
                   onChange={(event) => updateForm({ hazar: event.target.value })}
                   placeholder="0"
-                  className="min-h-11 rounded-lg border border-neutral-300 bg-transparent px-3 dark:border-neutral-700"
+                  className="min-h-11 w-full min-w-0 rounded-lg border border-neutral-300 bg-transparent px-3 dark:border-neutral-700"
                 />
               </label>
               {showQasrField && (
-                <label className="flex flex-1 flex-col gap-1 text-sm">
+                <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
                   <span>Safar</span>
                   <input
                     type="number"
@@ -197,7 +197,7 @@ export function SetupWizard() {
                     value={form.qasr}
                     onChange={(event) => updateForm({ qasr: event.target.value })}
                     placeholder="0"
-                    className="min-h-11 rounded-lg border border-neutral-300 bg-transparent px-3 dark:border-neutral-700"
+                    className="min-h-11 w-full min-w-0 rounded-lg border border-neutral-300 bg-transparent px-3 dark:border-neutral-700"
                   />
                 </label>
               )}
