@@ -11,14 +11,12 @@ const COLORS: Record<string, string> = {
 
 interface Props {
   record: QazoRecord;
-  pending?: boolean;
   onTap: (field: DailyLogField) => void;
 }
 
 function TapButtons({
   missed,
   completed,
-  pending,
   onPlus,
   onMinus,
   plusLabel,
@@ -26,7 +24,6 @@ function TapButtons({
 }: {
   missed: number;
   completed: number;
-  pending?: boolean;
   onPlus: () => void;
   onMinus: () => void;
   plusLabel: string;
@@ -39,7 +36,6 @@ function TapButtons({
       <button
         type="button"
         onClick={onPlus}
-        disabled={pending}
         aria-label={plusLabel}
         className="flex min-h-9 min-w-9 items-center justify-center rounded-full border border-red-300 text-base font-semibold text-red-600 disabled:opacity-50 dark:border-red-800 dark:text-red-400"
       >
@@ -48,7 +44,7 @@ function TapButtons({
       <button
         type="button"
         onClick={onMinus}
-        disabled={pending || nothingLeft}
+        disabled={nothingLeft}
         aria-label={minusLabel}
         title={nothingLeft ? "Qolgan qazo yo'q" : undefined}
         className="flex min-h-9 min-w-9 items-center justify-center rounded-full border border-emerald-300 text-base font-semibold text-emerald-600 disabled:opacity-50 dark:border-emerald-800 dark:text-emerald-400"
@@ -81,7 +77,7 @@ function BucketRow(
   );
 }
 
-export function PrayerRow({ record, pending, onTap }: Props) {
+export function PrayerRow({ record, onTap }: Props) {
   const color = COLORS[record.prayer_type.code] ?? "bg-emerald-600";
   const name = record.prayer_type.name;
   // Bomdod/Shom/Vitr don't shorten under safar (qasr rakat count == hazar
@@ -110,7 +106,6 @@ export function PrayerRow({ record, pending, onTap }: Props) {
             label="Oddiy"
             missed={record.hazar_missed}
             completed={record.hazar_completed}
-            pending={pending}
             onPlus={() => onTap("hazar_missed")}
             onMinus={() => onTap("hazar_completed")}
             plusLabel={`${name} bugun oddiy qoldirildi`}
@@ -120,7 +115,6 @@ export function PrayerRow({ record, pending, onTap }: Props) {
             label="Safar"
             missed={record.qasr_missed}
             completed={record.qasr_completed}
-            pending={pending}
             onPlus={() => onTap("qasr_missed")}
             onMinus={() => onTap("qasr_completed")}
             plusLabel={`${name} bugun safarda qoldirildi`}
@@ -132,7 +126,6 @@ export function PrayerRow({ record, pending, onTap }: Props) {
           <TapButtons
             missed={record.hazar_missed}
             completed={record.hazar_completed}
-            pending={pending}
             onPlus={() => onTap("hazar_missed")}
             onMinus={() => onTap("hazar_completed")}
             plusLabel={`${name} bugun qoldirildi`}

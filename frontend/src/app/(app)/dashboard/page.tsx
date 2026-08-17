@@ -68,7 +68,6 @@ export default function DashboardPage() {
             <PrayerRow
               key={record.prayer_type.code}
               record={record}
-              pending={increment.isPending}
               onTap={(field) => handleTap(record.prayer_type.code, field)}
             />
           ))}
