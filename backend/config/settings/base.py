@@ -115,6 +115,15 @@ EMAIL_BACKEND = config(
     "EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend"
 )
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@qazonamoz.local")
+# Only used once EMAIL_BACKEND is switched to smtp — harmless no-ops with the
+# console backend, but wired up now so going live with real SMTP later is
+# purely a .env change, no code change.
+EMAIL_HOST = config("EMAIL_HOST", default="localhost")
+EMAIL_PORT = config("EMAIL_PORT", default=25, cast=int)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=False, cast=bool)
+EMAIL_USE_SSL = config("EMAIL_USE_SSL", default=False, cast=bool)
 
 # --- DRF ---
 REST_FRAMEWORK = {
@@ -136,9 +145,14 @@ REST_FRAMEWORK = {
 # --- SimpleJWT ---
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=20),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
-    "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
+    # A hard 24h session cap, not a sliding window — rotation is off, so this
+    # is exactly 24h from login regardless of how often the app is used in
+    # between. The user then has to re-enter their password, which is the
+    # point: with a 30-day *sliding* window (the old ROTATE_REFRESH_TOKENS
+    # setup), someone who opens the app daily would never be asked for it
+    # again and could genuinely forget it.
+    "REFRESH_TOKEN_LIFETIME": timedelta(hours=24),
+    "ROTATE_REFRESH_TOKENS": False,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 

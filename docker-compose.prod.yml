@@ -21,3 +21,10 @@ services:
 
   nginx:
     restart: unless-stopped
+    # This server fronts several other apps behind one system-level Nginx
+    # (each on its own 127.0.0.1:<port>, see /etc/nginx/sites-available/) —
+    # binding to 0.0.0.0:80 here (the base compose file's dev default) would
+    # collide with it. Only listen on localhost; the system Nginx reverse-
+    # proxies qazolar.uz to this port.
+    ports:
+      - "127.0.0.1:8090:80"

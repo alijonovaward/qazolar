@@ -59,8 +59,11 @@ services:
   nginx:
     build:
       context: ./nginx
-    ports:
-      - "80:80"
+    # Port mapping is environment-specific — see docker-compose.override.yml
+    # (dev, host :80) and docker-compose.prod.yml (behind a system Nginx,
+    # localhost-only :8090). Compose concatenates `ports` across -f files
+    # rather than overriding it, so it can't live here if it's meant to
+    # differ per environment.
     depends_on:
       - backend
       - frontend
