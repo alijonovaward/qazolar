@@ -166,3 +166,23 @@ AUTH_COOKIE_SECURE = config("AUTH_COOKIE_SECURE", default=not DEBUG, cast=bool)
 OTP_CODE_LENGTH = 6
 OTP_EXPIRY_MINUTES = 10
 OTP_MAX_ATTEMPTS = 5
+
+# --- Logging ---
+# Django's own default (when this isn't set) routes 500s to mail_admins,
+# which silently does nothing without ADMINS/a working email backend
+# configured — meaning unhandled errors leave zero trace anywhere. Route
+# them to the console instead, which `docker compose logs backend` captures.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {"class": "logging.StreamHandler"},
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}

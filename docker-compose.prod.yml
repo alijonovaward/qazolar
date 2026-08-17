@@ -3,7 +3,15 @@ services:
     build:
       args:
         REQUIREMENTS_FILE: requirements/prod.txt
-    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    # migrate + collectstatic run on every start, not just the first — both
+    # are idempotent, and collectstatic in particular has to: the container
+    # is recreated (not just restarted) on every rebuild/redeploy, and
+    # /app/staticfiles only ever lived in that old container's throwaway
+    # layer, never a volume, so it'd otherwise "forget" it was ever run.
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3"
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
     restart: unless-stopped
