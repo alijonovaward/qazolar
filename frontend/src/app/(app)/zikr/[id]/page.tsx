@@ -39,6 +39,7 @@ export default function ZikrCountPage() {
   // effect. Same defaults+overrides shape as SetupWizard.tsx.
   const restoredDelta = useStoredDelta(storageKey);
   const [overrideBase, setOverrideBase] = useState<number | null>(null);
+  const [overrideMyCount, setOverrideMyCount] = useState<number | null>(null);
   const [overrideDelta, setOverrideDelta] = useState<number | null>(null);
 
   // Not a plain "override wins forever": useZikrList polls every 10s in the
@@ -48,6 +49,7 @@ export default function ZikrCountPage() {
   // always the fresher one, whether it came from our own last sync
   // response or from the background poll picking up someone else's.
   const baseCount = Math.max(overrideBase ?? 0, zikr?.current_count ?? 0);
+  const myBaseCount = Math.max(overrideMyCount ?? 0, zikr?.my_count ?? 0);
   const localDelta = overrideDelta ?? restoredDelta;
 
   // Always-current mirrors for the interval/unload handlers below, which
@@ -83,6 +85,7 @@ export default function ZikrCountPage() {
           }
 
           setOverrideBase(updated.current_count);
+          setOverrideMyCount(updated.my_count);
           // Subtract exactly what was sent, not reset to 0 — any taps that
           // landed while this request was in flight stay counted.
           const remainder = Math.max(localDeltaRef.current - delta, 0);
@@ -140,6 +143,11 @@ export default function ZikrCountPage() {
   const displayedCount = Math.min(baseCount + localDelta, zikr.target_count);
   const percent = zikr.target_count === 0 ? 100 : (displayedCount / zikr.target_count) * 100;
   const remaining = Math.max(zikr.target_count - displayedCount, 0);
+  // The tap button shows *your* running tally, not the collective one —
+  // the collective total already has its own place in the card above, and
+  // watching your own count go up 1-by-1 as you tap is the whole point of
+  // this screen.
+  const myDisplayedCount = myBaseCount + localDelta;
 
   function handleTap() {
     if (isComplete) return;
@@ -193,10 +201,10 @@ export default function ZikrCountPage() {
         </span>
         <span className="text-sm text-neutral-500">{zikr.translation}</span>
         <span className="text-5xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
-          {formatCount(displayedCount)}
+          {formatCount(myDisplayedCount)}
         </span>
         <span className="text-xs text-neutral-400">
-          {isComplete ? "Maqsadga yetdi ✅" : "Bosish uchun shu yerga teging"}
+          {isComplete ? "Maqsadga yetdi ✅" : "sizning hissangiz — bosish uchun shu yerga teging"}
         </span>
       </button>
     </main>
