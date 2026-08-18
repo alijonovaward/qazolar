@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
+import { BackButton } from "@/components/layout/BackButton";
 import { formatCount } from "@/components/zikr/utils";
 import { useSyncZikr, useZikrList } from "@/hooks/useZikr";
 
@@ -127,10 +127,10 @@ export default function ZikrCountPage() {
   if (!zikr) {
     return (
       <main className="mx-auto flex max-w-2xl flex-col gap-4">
-        <p className="text-sm text-neutral-500">Zikr topilmadi.</p>
-        <Link href="/zikr" className="text-sm text-emerald-700 underline dark:text-emerald-400">
-          Ro&apos;yxatga qaytish
-        </Link>
+        <div className="flex items-center gap-3">
+          <BackButton href="/zikr" label="Ro'yxatga qaytish" />
+          <p className="text-sm text-neutral-500">Zikr topilmadi.</p>
+        </div>
       </main>
     );
   }
@@ -158,11 +158,9 @@ export default function ZikrCountPage() {
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{zikr.transliteration}</h1>
-        <Link href="/zikr" className="text-sm text-emerald-700 underline dark:text-emerald-400">
-          Ro&apos;yxatga qaytish
-        </Link>
+      <div className="flex items-center gap-3">
+        <BackButton href="/zikr" label="Ro'yxatga qaytish" />
+        <h1 className="min-w-0 flex-1 truncate text-xl font-semibold">{zikr.transliteration}</h1>
       </div>
 
       <div className="flex flex-col gap-2 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
