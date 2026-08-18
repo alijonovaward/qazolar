@@ -147,3 +147,22 @@ class TestZikrSync:
     def test_404_for_nonexistent_zikr(self, client_a):
         response = sync(client_a, 999999, 10)
         assert response.status_code == 404
+
+    def test_completed_at_is_null_while_in_progress(self, client_a, zikr):
+        response = sync(client_a, zikr.id, 250)
+        assert response.data["completed_at"] is None
+        assert response.data["duration_days"] is None
+
+    def test_completed_at_is_set_once_the_target_is_reached(self, client_a, zikr):
+        response = sync(client_a, zikr.id, 1000)
+        assert response.data["completed_at"] is not None
+        assert response.data["duration_days"] == 0  # created and completed the same test run
+
+    def test_completed_at_is_not_overwritten_by_a_later_no_op_sync(self, client_a, zikr):
+        sync(client_a, zikr.id, 1000)
+        zikr.refresh_from_db()
+        first_completed_at = zikr.completed_at
+
+        sync(client_a, zikr.id, 10)  # no-op — already at target
+        zikr.refresh_from_db()
+        assert zikr.completed_at == first_completed_at

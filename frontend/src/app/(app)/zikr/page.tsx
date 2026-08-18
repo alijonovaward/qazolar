@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { formatCount } from "@/components/zikr/utils";
+import { formatCount, formatDate } from "@/components/zikr/utils";
 import { useZikrList } from "@/hooks/useZikr";
 
 export default function ZikrListPage() {
@@ -64,6 +64,28 @@ export default function ZikrListPage() {
                   />
                 </svg>
                 <span>{formatCount(zikr.participant_count)} ishtirokchi</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-neutral-400">
+                <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
+                  <rect
+                    x={3.5}
+                    y={5}
+                    width={17}
+                    height={16}
+                    rx={2}
+                    stroke="currentColor"
+                    strokeWidth={1.75}
+                  />
+                  <path d="M3.5 9.5h17M8 3v4M16 3v4" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" />
+                </svg>
+                {zikr.completed_at ? (
+                  <span>
+                    {formatDate(zikr.created_at)} – {formatDate(zikr.completed_at)} ·{" "}
+                    {zikr.duration_days} kun davom etdi
+                  </span>
+                ) : (
+                  <span>Boshlangan: {formatDate(zikr.created_at)}</span>
+                )}
               </div>
             </Link>
           ))}

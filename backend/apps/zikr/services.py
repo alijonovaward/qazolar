@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.utils import timezone
 
 from apps.accounts.models import User
 
@@ -32,7 +33,14 @@ def sync_zikr_count(user: User, zikr: Zikr, delta: int) -> Zikr:
             return locked
 
         locked.current_count += delta
-        locked.save(update_fields=["current_count", "updated_at"])
+        update_fields = ["current_count", "updated_at"]
+        # First time crossing the line, not every sync after — completed_at
+        # marks the moment the goal was reached, so it's set once and left
+        # alone even though current_count can't move past target_count again.
+        if locked.completed_at is None and locked.current_count >= locked.target_count:
+            locked.completed_at = timezone.now()
+            update_fields.append("completed_at")
+        locked.save(update_fields=update_fields)
 
         user_count, _created = UserZikrCount.objects.select_for_update().get_or_create(
             user=user, zikr=locked

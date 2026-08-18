@@ -6,6 +6,7 @@ from .models import Zikr
 class ZikrSerializer(serializers.ModelSerializer):
     percent_complete = serializers.FloatField(read_only=True)
     remaining = serializers.IntegerField(read_only=True)
+    duration_days = serializers.IntegerField(read_only=True)
     participant_count = serializers.SerializerMethodField()
     my_count = serializers.SerializerMethodField()
 
@@ -22,6 +23,9 @@ class ZikrSerializer(serializers.ModelSerializer):
             "remaining",
             "participant_count",
             "my_count",
+            "created_at",
+            "completed_at",
+            "duration_days",
         ]
 
     def get_participant_count(self, obj: Zikr) -> int:

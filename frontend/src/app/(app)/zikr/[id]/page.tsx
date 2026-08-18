@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { BackButton } from "@/components/layout/BackButton";
-import { formatCount } from "@/components/zikr/utils";
+import { formatCount, formatDate } from "@/components/zikr/utils";
 import { useSyncZikr, useZikrList } from "@/hooks/useZikr";
 
 const SYNC_INTERVAL_MS = 10_000;
@@ -174,6 +174,16 @@ export default function ZikrCountPage() {
         <p className="text-xs text-neutral-500">
           Jami: {formatCount(displayedCount)} / {formatCount(zikr.target_count)} ·{" "}
           {zikr.participant_count} ishtirokchi{syncing && " · sinxronlanmoqda..."}
+        </p>
+        <p className="text-xs text-neutral-400">
+          {zikr.completed_at ? (
+            <>
+              {formatDate(zikr.created_at)} – {formatDate(zikr.completed_at)} · {zikr.duration_days}{" "}
+              kun davom etdi
+            </>
+          ) : (
+            <>Boshlangan: {formatDate(zikr.created_at)}</>
+          )}
         </p>
         {othersBump && (
           <p

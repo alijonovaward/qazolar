@@ -18,6 +18,9 @@ class Zikr(TimeStampedModel):
     current_count = models.PositiveBigIntegerField(default=0)
     is_active = models.BooleanField(default=True)
     order = models.PositiveSmallIntegerField(default=0)
+    # Set once, by sync_zikr_count, the moment current_count first reaches
+    # target_count — not touched again after that (see the service for why).
+    completed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["order", "id"]
@@ -34,6 +37,16 @@ class Zikr(TimeStampedModel):
     @property
     def remaining(self) -> int:
         return max(self.target_count - self.current_count, 0)
+
+    @property
+    def duration_days(self) -> int | None:
+        """Whole days from created_at to completed_at — None while still
+        in progress. Date-only diff (not a timedelta with hours/minutes),
+        since "necha kun davom etdi" reads as a day count, not an exact
+        duration."""
+        if self.completed_at is None:
+            return None
+        return (self.completed_at.date() - self.created_at.date()).days
 
 
 class UserZikrCount(TimeStampedModel):
