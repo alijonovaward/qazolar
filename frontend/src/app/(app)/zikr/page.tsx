@@ -24,12 +24,13 @@ export default function ZikrListPage() {
               href={`/zikr/${zikr.id}`}
               className="flex flex-col gap-2 rounded-xl border border-neutral-200 p-4 transition-colors hover:border-neutral-400 dark:border-neutral-800 dark:hover:border-neutral-600"
             >
-              <div className="flex items-center justify-between gap-3">
-                <span className="font-semibold">{zikr.transliteration}</span>
-                <span dir="rtl" className="text-lg">
-                  {zikr.arabic_text}
-                </span>
-              </div>
+              <span dir="rtl" className="text-lg">
+                {zikr.arabic_text}
+              </span>
+              {/* Directly under the Arabic — same reading-aid order as the
+                  counting page, so people who can't read Arabic script can
+                  follow along by the transliteration below it. */}
+              <span className="font-semibold">{zikr.transliteration}</span>
               <p className="text-sm text-neutral-500">{zikr.translation}</p>
               <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
                 <div

@@ -197,6 +197,11 @@ export default function ZikrCountPage() {
         <span dir="rtl" className="text-3xl leading-relaxed">
           {zikr.arabic_text}
         </span>
+        {/* Directly under the Arabic — this is what someone who can't read
+            Arabic script actually reads off of to follow along. */}
+        <span className="text-base font-medium text-neutral-700 dark:text-neutral-300">
+          {zikr.transliteration}
+        </span>
         <span className="text-sm text-neutral-500">{zikr.translation}</span>
         <span className="text-5xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
           {formatCount(myDisplayedCount)}
