@@ -1,5 +1,7 @@
 import type { Forecast } from "@/types/prayer";
 
+import { estimatedReadingMinutes, formatDuration } from "./utils";
+
 function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="flex flex-1 flex-col gap-1 rounded-lg bg-neutral-50 p-3 dark:bg-neutral-900">
@@ -16,7 +18,7 @@ export function ForecastCard({ forecast }: { forecast: Forecast }) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
       <h2 className="font-semibold">Prognoz</h2>
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <StatTile
           label="Kunlik tezlik"
           value={`${forecast.daily_rakat_rate.toFixed(1)} rakat`}
@@ -30,6 +32,13 @@ export function ForecastCard({ forecast }: { forecast: Forecast }) {
               ? `≈ ${forecast.forecast_years_remaining} yil`
               : "hali ma'lumot yetarli emas"
           }
+        />
+        {/* Sof o'qish vaqti — kalendar prognozdan farqli, tinmay o'qilsa
+            ketadigan vaqt (taxminan 1 rakat = 1 daqiqa). */}
+        <StatTile
+          label="Jami o'qish vaqti"
+          value={formatDuration(estimatedReadingMinutes(forecast.remaining_rakats))}
+          hint="tinmay o'qisangiz"
         />
       </div>
     </div>
