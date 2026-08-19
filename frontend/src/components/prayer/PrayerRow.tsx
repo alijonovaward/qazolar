@@ -1,13 +1,6 @@
 import type { DailyLogField, QazoRecord } from "@/types/prayer";
 
-const COLORS: Record<string, string> = {
-  bomdod: "bg-indigo-500",
-  peshin: "bg-amber-500",
-  asr: "bg-orange-500",
-  shom: "bg-rose-500",
-  xufton: "bg-sky-600",
-  vitr: "bg-violet-600",
-};
+import { PRAYER_BORDER_COLORS, PRAYER_COLORS } from "./utils";
 
 interface Props {
   record: QazoRecord;
@@ -78,7 +71,8 @@ function BucketRow(
 }
 
 export function PrayerRow({ record, onTap }: Props) {
-  const color = COLORS[record.prayer_type.code] ?? "bg-emerald-600";
+  const color = PRAYER_COLORS[record.prayer_type.code] ?? "bg-emerald-600";
+  const borderColor = PRAYER_BORDER_COLORS[record.prayer_type.code] ?? "border-l-emerald-600";
   const name = record.prayer_type.name;
   // Bomdod/Shom/Vitr don't shorten under safar (qasr rakat count == hazar
   // rakat count) — a separate "safar" bucket is meaningless there, so a
@@ -86,7 +80,14 @@ export function PrayerRow({ record, onTap }: Props) {
   const hasQasrBucket = record.prayer_type.qasr_rakat_count !== record.prayer_type.rakat_count;
 
   return (
-    <div className="flex flex-col gap-1.5 border-b border-neutral-100 py-2 last:border-0 dark:border-neutral-800">
+    // Its own bordered card, not just a bottom-border list row — a thin
+    // divider line reads as "barely there" once you're scanning fast for
+    // *which* prayer's +/- you're about to tap. The colored left edge
+    // matches this prayer's color everywhere else in the app (progress
+    // bar, charts), so it's identifiable without reading the label first.
+    <div
+      className={`flex flex-col gap-1.5 rounded-xl border border-neutral-200 border-l-4 p-3 dark:border-neutral-800 ${borderColor}`}
+    >
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium">{name}</span>
         <span className="text-neutral-500">

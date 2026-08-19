@@ -76,6 +76,7 @@ export function useIncrementDailyLog(date: string) {
       queryClient.invalidateQueries({ queryKey: ["daily-logs", date] });
       queryClient.invalidateQueries({ queryKey: ["qazo-records"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["tap-logs"] });
     },
   });
 }

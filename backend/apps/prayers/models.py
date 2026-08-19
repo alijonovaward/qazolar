@@ -122,6 +122,31 @@ class DailyLog(TimeStampedModel):
         ordering = ["-date"]
 
 
+class TapLog(TimeStampedModel):
+    """One row per actual +/- tap on the dashboard — DailyLog only keeps a
+    running daily total per (user, prayer_type, date), not who tapped what
+    when. This is what powers the dashboard's 'So'nggi amallar' list, so
+    someone unsure whether a tap registered can scroll down and see it.
+    A no-op tap (e.g. *_completed when nothing is owed) is never logged
+    here, since nothing actually changed."""
+
+    class Field(models.TextChoices):
+        HAZAR_MISSED = "hazar_missed", "Oddiy qoldirildi"
+        HAZAR_COMPLETED = "hazar_completed", "Oddiy o'qildi"
+        QASR_MISSED = "qasr_missed", "Safar qoldirildi"
+        QASR_COMPLETED = "qasr_completed", "Safar qazosi o'qildi"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="tap_logs"
+    )
+    prayer_type = models.ForeignKey(PrayerType, on_delete=models.CASCADE)
+    field = models.CharField(max_length=20, choices=Field.choices)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "-created_at"])]
+
+
 class DailyGoal(TimeStampedModel):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="daily_goals"

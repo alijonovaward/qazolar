@@ -5,7 +5,7 @@ from django.db import transaction
 
 from apps.accounts.models import User
 
-from ..models import DailyLog, PrayerType, QazoRecord
+from ..models import DailyLog, PrayerType, QazoRecord, TapLog
 
 Bucket = Literal["hazar_missed", "hazar_completed", "qasr_missed", "qasr_completed"]
 
@@ -34,6 +34,10 @@ def increment_daily_log(
             user=user, prayer_type=prayer_type, date=date
         )
 
+        # Whether this call actually moved a number — stays True for the two
+        # "_missed" branches (always allowed) and only flips to False for a
+        # "_completed" tap that the guard below turns into a no-op.
+        changed = True
         if field == "hazar_missed":
             log.hazar_missed_count += 1
             record.hazar_missed += 1
@@ -41,6 +45,8 @@ def increment_daily_log(
             if record.hazar_completed < record.hazar_missed:
                 log.hazar_completed_count += 1
                 record.hazar_completed += 1
+            else:
+                changed = False
         elif field == "qasr_missed":
             log.qasr_missed_count += 1
             record.qasr_missed += 1
@@ -48,6 +54,8 @@ def increment_daily_log(
             if record.qasr_completed < record.qasr_missed:
                 log.qasr_completed_count += 1
                 record.qasr_completed += 1
+            else:
+                changed = False
 
         log.save(
             update_fields=[
@@ -61,5 +69,8 @@ def increment_daily_log(
         record.save(
             update_fields=["hazar_missed", "hazar_completed", "qasr_missed", "qasr_completed", "updated_at"]
         )
+
+        if changed:
+            TapLog.objects.create(user=user, prayer_type=prayer_type, field=field)
 
     return log

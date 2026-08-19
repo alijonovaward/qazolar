@@ -5,7 +5,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.accounts.models import User
-from apps.prayers.models import InitialQazoSetup, PrayerType, QazoRecord
+from apps.prayers.models import InitialQazoSetup, PrayerType, QazoRecord, TapLog
 from apps.prayers.services.daily_log import increment_daily_log
 from apps.prayers.services.setup import apply_setup
 
@@ -214,6 +214,75 @@ class TestDailyLogIncrementEndpoint:
             format="json",
         )
         assert response.status_code == 400
+
+
+class TestTapLogEndpoint:
+    def test_a_real_tap_creates_a_log_entry(self, prayer_types, client_a, user_a):
+        today = timezone.localdate()
+        client_a.post(
+            "/api/daily-logs/increment/",
+            {"prayer_type": "asr", "date": today.isoformat(), "field": "hazar_missed"},
+            format="json",
+        )
+        assert TapLog.objects.filter(user=user_a, prayer_type__code="asr").count() == 1
+
+    def test_a_no_op_completed_tap_does_not_create_a_log_entry(self, prayer_types, client_a, user_a):
+        today = timezone.localdate()
+        # nothing owed yet, so this "o'qidim" tap is a no-op (see
+        # test_completed_does_not_exceed_that_buckets_missed above)
+        client_a.post(
+            "/api/daily-logs/increment/",
+            {"prayer_type": "asr", "date": today.isoformat(), "field": "hazar_completed"},
+            format="json",
+        )
+        assert TapLog.objects.filter(user=user_a).count() == 0
+
+    def test_list_returns_newest_first(self, prayer_types, client_a, user_a):
+        today = timezone.localdate()
+        client_a.post(
+            "/api/daily-logs/increment/",
+            {"prayer_type": "asr", "date": today.isoformat(), "field": "hazar_missed"},
+            format="json",
+        )
+        client_a.post(
+            "/api/daily-logs/increment/",
+            {"prayer_type": "shom", "date": today.isoformat(), "field": "qasr_missed"},
+            format="json",
+        )
+        response = client_a.get("/api/tap-logs/")
+        assert response.status_code == 200
+        assert [row["prayer_type"]["code"] for row in response.data] == ["shom", "asr"]
+
+    def test_is_capped_at_20_even_with_more_history(self, prayer_types, client_a, user_a):
+        today = timezone.localdate()
+        for _ in range(25):
+            client_a.post(
+                "/api/daily-logs/increment/",
+                {"prayer_type": "asr", "date": today.isoformat(), "field": "hazar_missed"},
+                format="json",
+            )
+        response = client_a.get("/api/tap-logs/")
+        assert len(response.data) == 20
+
+    def test_user_cannot_see_another_users_tap_logs(self, prayer_types, client_a, client_b, user_b):
+        today = timezone.localdate()
+        client_b.post(
+            "/api/daily-logs/increment/",
+            {"prayer_type": "asr", "date": today.isoformat(), "field": "hazar_missed"},
+            format="json",
+        )
+        response = client_a.get("/api/tap-logs/")
+        assert response.data == []
+
+    def test_is_not_paginated(self, prayer_types, client_a, user_a):
+        today = timezone.localdate()
+        client_a.post(
+            "/api/daily-logs/increment/",
+            {"prayer_type": "asr", "date": today.isoformat(), "field": "hazar_missed"},
+            format="json",
+        )
+        response = client_a.get("/api/tap-logs/")
+        assert isinstance(response.data, list)
 
 
 class TestRemainingTrendEndpoint:

@@ -77,6 +77,14 @@ export interface Forecast {
   forecast_years_remaining: number | null;
 }
 
+export interface TapLog {
+  id: number;
+  prayer_type: PrayerType;
+  field: DailyLogField;
+  field_display: string;
+  created_at: string;
+}
+
 export interface MenstruationPeriod {
   id: number;
   start_date: string;

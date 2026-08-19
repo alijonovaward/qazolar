@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import DailyGoal, DailyLog, InitialQazoSetup, PrayerType, QazoRecord
+from .models import DailyGoal, DailyLog, InitialQazoSetup, PrayerType, QazoRecord, TapLog
 
 
 @admin.register(PrayerType)
@@ -30,6 +30,13 @@ class DailyLogAdmin(admin.ModelAdmin):
     ]
     list_filter = ["prayer_type"]
     date_hierarchy = "date"
+
+
+@admin.register(TapLog)
+class TapLogAdmin(admin.ModelAdmin):
+    list_display = ["user", "prayer_type", "field", "created_at"]
+    list_filter = ["prayer_type", "field"]
+    date_hierarchy = "created_at"
 
 
 @admin.register(DailyGoal)

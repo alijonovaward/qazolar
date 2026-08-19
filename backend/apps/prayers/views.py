@@ -6,7 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import DailyGoal, DailyLog, InitialQazoSetup, PrayerType, QazoRecord
+from .models import DailyGoal, DailyLog, InitialQazoSetup, PrayerType, QazoRecord, TapLog
 from .serializers import (
     DailyGoalSerializer,
     DailyLogIncrementSerializer,
@@ -15,6 +15,7 @@ from .serializers import (
     InitialQazoSetupWriteSerializer,
     PrayerTypeSerializer,
     QazoRecordSerializer,
+    TapLogSerializer,
 )
 from .services.daily_log import increment_daily_log
 from .services.forecast import current_streak, daily_rakat_rate, forecast_days_remaining, remaining_rakats
@@ -109,6 +110,21 @@ class DailyLogIncrementView(APIView):
         serializer.is_valid(raise_exception=True)
         log = increment_daily_log(user=request.user, **serializer.validated_data)
         return Response(DailyLogSerializer(log).data, status=status.HTTP_200_OK)
+
+
+class TapLogListView(generics.ListAPIView):
+    """Most recent taps, newest first — never paginated, since the dashboard
+    only ever shows a capped recent slice (not a browsable full history)."""
+
+    serializer_class = TapLogSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        return (
+            TapLog.objects.filter(user=self.request.user)
+            .select_related("prayer_type")
+            .order_by("-created_at")[:20]
+        )
 
 
 class DailyGoalTodayView(APIView):

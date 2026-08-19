@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ForecastCard } from "@/components/prayer/ForecastCard";
 import { OverallProgressCard } from "@/components/prayer/OverallProgressCard";
 import { PrayerRow } from "@/components/prayer/PrayerRow";
+import { RecentActivityCard } from "@/components/prayer/RecentActivityCard";
 import { StreakBadge } from "@/components/prayer/StreakBadge";
 import { useIncrementDailyLog } from "@/hooks/useDailyLog";
 import { useForecast } from "@/hooks/useForecast";
@@ -59,7 +60,7 @@ export default function DashboardPage() {
       {hasSetup && forecast && <ForecastCard forecast={forecast} />}
 
       {hasSetup && (
-        <div className="flex flex-col gap-2 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+        <div className="flex flex-col gap-3">
           <p className="text-xs text-neutral-500">
             <span className="font-semibold text-red-600 dark:text-red-400">+</span> qoldirdim ·{" "}
             <span className="font-semibold text-emerald-600 dark:text-emerald-400">−</span> o&apos;qidim
@@ -73,6 +74,8 @@ export default function DashboardPage() {
           ))}
         </div>
       )}
+
+      {hasSetup && <RecentActivityCard />}
 
       {hasSetup && (
         <Link href="/setup" className="text-sm text-emerald-700 underline dark:text-emerald-400">

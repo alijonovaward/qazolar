@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import DailyGoal, DailyLog, InitialQazoSetup, PrayerType, QazoRecord
+from .models import DailyGoal, DailyLog, InitialQazoSetup, PrayerType, QazoRecord, TapLog
 
 
 class PrayerTypeSerializer(serializers.ModelSerializer):
@@ -81,6 +81,15 @@ class DailyLogSerializer(serializers.ModelSerializer):
             "qasr_completed_count",
             "updated_at",
         ]
+
+
+class TapLogSerializer(serializers.ModelSerializer):
+    prayer_type = PrayerTypeSerializer(read_only=True)
+    field_display = serializers.CharField(source="get_field_display", read_only=True)
+
+    class Meta:
+        model = TapLog
+        fields = ["id", "prayer_type", "field", "field_display", "created_at"]
 
 
 class DailyGoalSerializer(serializers.ModelSerializer):
