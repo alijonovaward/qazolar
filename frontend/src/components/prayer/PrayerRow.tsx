@@ -90,8 +90,11 @@ export function PrayerRow({ record, onTap }: Props) {
     >
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium">{name}</span>
-        <span className="text-neutral-500">
-          {record.remaining_count} / {record.total_missed} qoldi
+        {/* Same percent followers see on FolloweeProfileView's MiniPrayerRow
+            — shown here too so it's not something you only see through
+            someone else's eyes. */}
+        <span className="font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
+          {record.percent_complete}%
         </span>
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
@@ -100,6 +103,9 @@ export function PrayerRow({ record, onTap }: Props) {
           style={{ width: `${record.percent_complete}%` }}
         />
       </div>
+      <p className="text-xs text-neutral-500">
+        {record.remaining_count} / {record.total_missed} qoldi
+      </p>
 
       {hasQasrBucket ? (
         <>
