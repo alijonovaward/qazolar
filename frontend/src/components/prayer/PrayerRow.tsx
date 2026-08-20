@@ -85,8 +85,17 @@ export function PrayerRow({ record, onTap }: Props) {
     // *which* prayer's +/- you're about to tap. The colored left edge
     // matches this prayer's color everywhere else in the app (progress
     // bar, charts), so it's identifiable without reading the label first.
+    //
+    // Top/right/bottom and left are deliberately split into separate
+    // border-{side} utilities instead of the `border`/`border-neutral-200`
+    // shorthands — those shorthands set border-*-color on all four sides
+    // at once, and dark:border-neutral-800 (also a shorthand) has higher
+    // specificity than border-l-{color} once .dark is active, so it silently
+    // overwrote the colored left edge in dark mode while leaving it alone
+    // in light mode. Restricting the neutral color to y/r only means it
+    // never touches border-left-color in either mode, in either direction.
     <div
-      className={`flex flex-col gap-1.5 rounded-xl border border-neutral-200 border-l-4 p-3 dark:border-neutral-800 ${borderColor}`}
+      className={`flex flex-col gap-1.5 rounded-xl border-y border-r border-l-4 border-y-neutral-200 border-r-neutral-200 p-3 dark:border-y-neutral-800 dark:border-r-neutral-800 ${borderColor}`}
     >
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium">{name}</span>
