@@ -1,11 +1,6 @@
 "use client";
 
-import { useState } from "react";
-
-import { PeriodToggle } from "@/components/stats/PeriodToggle";
-import { RemainingTrendChart } from "@/components/stats/RemainingTrendChart";
 import { useFolloweeRemainingTrend } from "@/hooks/useSocial";
-import type { StatsPeriod } from "@/hooks/useStats";
 import type { QazoRecord } from "@/types/prayer";
 import type { FolloweeProfile } from "@/types/social";
 
@@ -49,22 +44,9 @@ export function FolloweeProfileView({
   relationId: number;
 }) {
   // Same visibility tier as percent_complete/current_streak (see
-  // FolloweeRemainingTrendView) — only fetched once there's something to
-  // show, and a 403/404 here just means the sparkline stays empty (retry:
-  // false on the hook), not an error for the whole card.
+  // FolloweeRemainingTrendView) — a 403/404 here just leaves the sparkline
+  // empty (retry: false on the hook), not an error for the whole card.
   const { data: trend } = useFolloweeRemainingTrend(relationId, "week");
-
-  // The full tabbed chart (day/week/month/year — same as /stats) is opt-in
-  // per card, not fetched until someone actually asks for it — the sparkline
-  // above already answers "how's it trending" for free on every card in the
-  // list, this is for whoever wants to dig into one specific friend's numbers.
-  const [expanded, setExpanded] = useState(false);
-  const [period, setPeriod] = useState<StatsPeriod>("week");
-  const { data: fullTrend, isLoading: fullTrendLoading } = useFolloweeRemainingTrend(
-    relationId,
-    period,
-    { enabled: expanded }
-  );
 
   if (profile.visibility === "none") {
     return <p className="text-xs text-neutral-500">Ma&apos;lumotni ko&apos;rsatishni yoqmagan.</p>;
@@ -73,16 +55,10 @@ export function FolloweeProfileView({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        {/* Shrunk from flex-1 to a fixed width — the sparkline next to it
-            carries the "how's it trending" job now, this bar just gives the
-            percent a quick visual anchor. */}
-        <div className="h-1.5 w-10 shrink-0 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
-          <div
-            className="h-full bg-emerald-600 transition-all"
-            style={{ width: `${profile.percent_complete}%` }}
-          />
-        </div>
-        {trend && <MiniTrendSparkline data={trend} />}
+        {/* The sparkline carries the "how's it trending" job on its own now
+            — no separate static progress bar needed alongside it, and no
+            click-to-expand step: it's just always here. */}
+        {trend && trend.length > 0 && <MiniTrendSparkline data={trend} />}
         <span className="ml-auto shrink-0 text-xs font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
           {profile.percent_complete}%
         </span>
@@ -98,29 +74,6 @@ export function FolloweeProfileView({
           {profile.records.map((record) => (
             <MiniPrayerRow key={record.prayer_type.code} record={record} />
           ))}
-        </div>
-      )}
-
-      {trend && trend.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setExpanded((value) => !value)}
-          className="w-fit text-xs font-medium text-emerald-700 underline dark:text-emerald-400"
-        >
-          {expanded ? "Grafikni yashirish" : "To'liq grafikni ko'rish"}
-        </button>
-      )}
-
-      {expanded && (
-        <div className="flex flex-col gap-2">
-          <PeriodToggle value={period} onChange={setPeriod} />
-          {fullTrendLoading ? (
-            <p className="flex h-64 items-center justify-center text-sm text-neutral-500">
-              Yuklanmoqda...
-            </p>
-          ) : (
-            <RemainingTrendChart data={fullTrend ?? []} />
-          )}
         </div>
       )}
     </div>

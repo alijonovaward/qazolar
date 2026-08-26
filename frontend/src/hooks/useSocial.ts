@@ -76,17 +76,11 @@ export function useFollowers() {
 }
 
 // Same shape as useRemainingTrend, just scoped to a followee's relation id
-// instead of "the current user" — used both for the always-visible mini
-// sparkline (fixed to "week") and, once expanded, the full tabbed chart
-// (period switches on demand, `enabled` keeps it from fetching until then).
-// 404/403 (relation gone, or they turned visibility off) just leave the
-// caller's `data` undefined rather than erroring the whole card — see
-// FolloweeProfileView.
-export function useFolloweeRemainingTrend(
-  relationId: number,
-  period: StatsPeriod,
-  options?: { enabled?: boolean }
-) {
+// instead of "the current user" — powers the always-visible mini sparkline
+// on their card (see FolloweeProfileView). 404/403 (relation gone, or they
+// turned visibility off) just leave `data` undefined rather than erroring
+// the whole card.
+export function useFolloweeRemainingTrend(relationId: number, period: StatsPeriod) {
   return useQuery({
     queryKey: ["social", "following", relationId, "remaining-trend", period],
     queryFn: () =>
@@ -94,6 +88,5 @@ export function useFolloweeRemainingTrend(
         `/social/following/${relationId}/remaining-trend/?period=${period}`
       ),
     retry: false,
-    enabled: options?.enabled ?? true,
   });
 }

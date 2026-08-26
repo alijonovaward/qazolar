@@ -43,9 +43,9 @@ export function MiniTrendSparkline({ data }: { data: RemainingTrendPoint[] }) {
   const accent = isDark ? ACCENT_COLOR.dark : ACCENT_COLOR.light;
 
   return (
-    <div className="h-6 w-16 shrink-0">
+    <div className="h-10 min-w-0 flex-1">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
+        <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
           <Area
             type="monotone"
             dataKey="remaining"
