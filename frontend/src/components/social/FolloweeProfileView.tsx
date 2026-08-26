@@ -1,10 +1,9 @@
 "use client";
 
+import { RemainingTrendChart } from "@/components/stats/RemainingTrendChart";
 import { useFolloweeRemainingTrend } from "@/hooks/useSocial";
 import type { QazoRecord } from "@/types/prayer";
 import type { FolloweeProfile } from "@/types/social";
-
-import { MiniTrendSparkline } from "./MiniTrendSparkline";
 
 // Same palette as the dashboard's PrayerRow, so a prayer reads as the same
 // color everywhere in the app.
@@ -44,7 +43,7 @@ export function FolloweeProfileView({
   relationId: number;
 }) {
   // Same visibility tier as percent_complete/current_streak (see
-  // FolloweeRemainingTrendView) — a 403/404 here just leaves the sparkline
+  // FolloweeRemainingTrendView) — a 403/404 here just leaves the chart
   // empty (retry: false on the hook), not an error for the whole card.
   const { data: trend } = useFolloweeRemainingTrend(relationId, "week");
 
@@ -65,11 +64,17 @@ export function FolloweeProfileView({
         )}
       </div>
 
-      {/* Its own full-width row, not squeezed next to the percent — a
-          sparkline needs real height to show its shape at all, and
-          cramming it into a thin strip beside other text just flattened it
-          into a barely-there line. */}
-      {trend && trend.length > 0 && <MiniTrendSparkline data={trend} />}
+      {/* The exact same chart /stats uses for the current user — not a
+          simplified/de-emphasized variant, just this component pointed at
+          the followee's data instead. */}
+      {trend && trend.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+            Qolgan qazo (umumiy qarz)
+          </h3>
+          <RemainingTrendChart data={trend} />
+        </div>
+      )}
 
       {profile.visibility === "full" && profile.records && (
         <div className="flex flex-col gap-1.5">
