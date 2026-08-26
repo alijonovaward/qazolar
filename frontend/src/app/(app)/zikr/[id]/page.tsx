@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 
 import { BackButton } from "@/components/layout/BackButton";
 import { formatCount, formatDate } from "@/components/zikr/utils";
+import { TopContributors } from "@/components/zikr/TopContributors";
 import { useSyncZikr, useZikrList } from "@/hooks/useZikr";
 
 const SYNC_INTERVAL_MS = 10_000;
@@ -195,6 +196,8 @@ export default function ZikrCountPage() {
           </p>
         )}
       </div>
+
+      <TopContributors contributors={zikr.top_contributors} />
 
       {/* On the bottom half of the screen — this is what gets tapped over
           and over, so it belongs where a thumb comfortably reaches. */}

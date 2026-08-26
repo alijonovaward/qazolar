@@ -64,6 +64,43 @@ class TestZikrList:
         assert isinstance(response.data, list)
 
 
+class TestZikrTopContributors:
+    def test_ranks_contributors_by_count_descending(self, client_a, client_b, zikr, user_a, user_b):
+        sync(client_a, zikr.id, 10)
+        sync(client_b, zikr.id, 30)
+        response = client_a.get("/api/zikr/")
+        top = response.data[0]["top_contributors"]
+        assert [row["count"] for row in top] == [30, 10]
+        assert top[0]["user"]["id"] == user_b.id
+
+    def test_caps_at_three_even_with_more_contributors(self, client_a, client_b, zikr, user_a, user_b):
+        user_c = User.objects.create(email="c@test.com")
+        user_d = User.objects.create(email="d@test.com")
+        for user, amount in [(user_a, 10), (user_b, 20), (user_c, 30), (user_d, 40)]:
+            client = APIClient()
+            client.force_authenticate(user=user)
+            sync(client, zikr.id, amount)
+
+        response = client_a.get("/api/zikr/")
+        top = response.data[0]["top_contributors"]
+        assert len(top) == 3
+        assert [row["count"] for row in top] == [40, 30, 20]
+
+    def test_excludes_zero_contributors(self, client_a, zikr):
+        # user_a authenticates but never taps — shouldn't appear as a
+        # zero-count "contributor"
+        response = client_a.get("/api/zikr/")
+        assert response.data[0]["top_contributors"] == []
+
+    def test_shows_username_when_set_email_otherwise(self, client_a, client_b, zikr, user_b):
+        user_b.username = "zikr_master"
+        user_b.save()
+        sync(client_b, zikr.id, 5)
+        response = client_a.get("/api/zikr/")
+        top = response.data[0]["top_contributors"]
+        assert top[0]["user"]["username"] == "zikr_master"
+
+
 class TestZikrSync:
     def test_increments_the_collective_total(self, client_a, zikr):
         response = sync(client_a, zikr.id, 50)
