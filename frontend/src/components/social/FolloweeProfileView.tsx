@@ -45,7 +45,9 @@ export function FolloweeProfileView({
   // Same visibility tier as percent_complete/current_streak (see
   // FolloweeRemainingTrendView) — a 403/404 here just leaves the chart
   // empty (retry: false on the hook), not an error for the whole card.
-  const { data: trend } = useFolloweeRemainingTrend(relationId, "week");
+  // "day" — same default tab /stats itself opens on, which is the 14-day
+  // window (see TREND_WINDOWS), not the 7-day "week" one.
+  const { data: trend } = useFolloweeRemainingTrend(relationId, "day");
 
   if (profile.visibility === "none") {
     return <p className="text-xs text-neutral-500">Ma&apos;lumotni ko&apos;rsatishni yoqmagan.</p>;
