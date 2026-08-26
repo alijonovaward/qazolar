@@ -4,7 +4,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 
 import { apiClient } from "@/lib/api-client";
 import type { Paginated } from "@/types/api";
-import type { RemainingTrendPoint } from "@/hooks/useStats";
+import type { RemainingTrendPoint, StatsPeriod } from "@/hooks/useStats";
 import type { FollowingRelation, FollowRelation } from "@/types/social";
 
 function useInvalidateFollowQueries() {
@@ -75,18 +75,25 @@ export function useFollowers() {
   );
 }
 
-// Fixed to "week" — this is the compact sparkline on a followee's card, not
-// the full tabbed chart from /stats, so there's no period switcher to wire
-// up. 404/403 (relation gone, or they turned visibility off) just leave the
-// sparkline empty rather than erroring the whole card — see
-// FolloweeProfileView, which renders nothing when `data` is undefined.
-export function useFolloweeRemainingTrend(relationId: number) {
+// Same shape as useRemainingTrend, just scoped to a followee's relation id
+// instead of "the current user" — used both for the always-visible mini
+// sparkline (fixed to "week") and, once expanded, the full tabbed chart
+// (period switches on demand, `enabled` keeps it from fetching until then).
+// 404/403 (relation gone, or they turned visibility off) just leave the
+// caller's `data` undefined rather than erroring the whole card — see
+// FolloweeProfileView.
+export function useFolloweeRemainingTrend(
+  relationId: number,
+  period: StatsPeriod,
+  options?: { enabled?: boolean }
+) {
   return useQuery({
-    queryKey: ["social", "following", relationId, "remaining-trend"],
+    queryKey: ["social", "following", relationId, "remaining-trend", period],
     queryFn: () =>
       apiClient.get<RemainingTrendPoint[]>(
-        `/social/following/${relationId}/remaining-trend/?period=week`
+        `/social/following/${relationId}/remaining-trend/?period=${period}`
       ),
     retry: false,
+    enabled: options?.enabled ?? true,
   });
 }
