@@ -47,7 +47,7 @@ export default function FollowingPage() {
                   </button>
                 </div>
                 <div className="pl-12">
-                  <FolloweeProfileView profile={relation.followee_profile} />
+                  <FolloweeProfileView profile={relation.followee_profile} relationId={relation.id} />
                 </div>
               </li>
             ))}

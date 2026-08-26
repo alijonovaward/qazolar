@@ -214,6 +214,59 @@ class TestFollowingVisibility:
         assert profile == {"visibility": "none"}
 
 
+class TestFolloweeRemainingTrend:
+    def _accept(self, client_a, client_b, user_b):
+        rel_id = follow(client_a, user_b.username).data["id"]
+        client_b.post(f"/api/social/follow-requests/{rel_id}/accept/")
+        return rel_id
+
+    def test_percent_only_can_still_see_the_trend(self, client_a, client_b, user_b):
+        user_b.follower_visibility = User.VisibilityLevel.PERCENT_ONLY
+        user_b.save()
+        rel_id = self._accept(client_a, client_b, user_b)
+        response = client_a.get(f"/api/social/following/{rel_id}/remaining-trend/")
+        assert response.status_code == 200
+        assert isinstance(response.data, list)
+
+    def test_full_can_see_the_trend(self, client_a, client_b, user_b):
+        user_b.follower_visibility = User.VisibilityLevel.FULL
+        user_b.save()
+        rel_id = self._accept(client_a, client_b, user_b)
+        response = client_a.get(f"/api/social/following/{rel_id}/remaining-trend/")
+        assert response.status_code == 200
+
+    def test_none_visibility_is_forbidden(self, client_a, client_b, user_b):
+        user_b.follower_visibility = User.VisibilityLevel.NONE
+        user_b.save()
+        rel_id = self._accept(client_a, client_b, user_b)
+        response = client_a.get(f"/api/social/following/{rel_id}/remaining-trend/")
+        assert response.status_code == 403
+
+    def test_pending_relation_is_not_visible_yet(self, client_a, user_b):
+        rel_id = follow(client_a, user_b.username).data["id"]
+        response = client_a.get(f"/api/social/following/{rel_id}/remaining-trend/")
+        assert response.status_code == 404
+
+    def test_uninvolved_user_cannot_see_someone_elses_followee_trend(
+        self, client_a, client_c, user_b
+    ):
+        rel_id = follow(client_a, user_b.username).data["id"]
+        response = client_c.get(f"/api/social/following/{rel_id}/remaining-trend/")
+        assert response.status_code == 404
+
+    def test_followee_cannot_use_the_relation_from_the_other_side(self, client_a, client_b, user_b):
+        rel_id = self._accept(client_a, client_b, user_b)
+        # this endpoint is "what I, the follower, see about them" — the
+        # followee hitting their own relation id isn't the follower on it
+        response = client_b.get(f"/api/social/following/{rel_id}/remaining-trend/")
+        assert response.status_code == 404
+
+    def test_rejects_bad_period(self, client_a, client_b, user_b):
+        rel_id = self._accept(client_a, client_b, user_b)
+        response = client_a.get(f"/api/social/following/{rel_id}/remaining-trend/?period=bogus")
+        assert response.status_code == 400
+
+
 class TestFollowersList:
     def test_shows_accepted_followers_only(self, client_a, client_b, user_a, user_b):
         rel_id = follow(client_a, user_b.username).data["id"]

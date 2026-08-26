@@ -24,5 +24,10 @@ urlpatterns = [
         name="follow-relation-remove",
     ),
     path("social/following/", views.FollowingListView.as_view(), name="social-following"),
+    path(
+        "social/following/<int:pk>/remaining-trend/",
+        views.FolloweeRemainingTrendView.as_view(),
+        name="social-followee-remaining-trend",
+    ),
     path("social/followers/", views.FollowersListView.as_view(), name="social-followers"),
 ]

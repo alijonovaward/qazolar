@@ -6,6 +6,8 @@ from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.prayers.services.stats import TREND_WINDOWS, remaining_trend
+
 from .models import FollowRelation
 from .serializers import (
     FollowingRelationSerializer,
@@ -93,6 +95,36 @@ class FollowingListView(generics.ListAPIView):
             .select_related("follower", "followee")
             .order_by("followee__email")
         )
+
+
+class FolloweeRemainingTrendView(APIView):
+    """The same 'qolgan qazo' trend the followee sees on their own /stats,
+    for the compact sparkline on their FolloweeProfileView card — always the
+    combined total (no per-prayer filter, no period tabs), gated by the same
+    visibility tier as percent_complete/current_streak (PERCENT_ONLY or FULL,
+    never NONE), since it's an aggregate, not a per-prayer breakdown."""
+
+    def get(self, request, pk):
+        relation = get_object_or_404(
+            FollowRelation,
+            pk=pk,
+            follower=request.user,
+            status=FollowRelation.Status.ACCEPTED,
+        )
+        followee = relation.followee
+        if followee.follower_visibility == User.VisibilityLevel.NONE:
+            return Response(
+                {"detail": "Bu foydalanuvchi ma'lumotlarini ko'rsatishni yoqmagan"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        period = request.query_params.get("period", "week")
+        if period not in TREND_WINDOWS:
+            return Response(
+                {"detail": "period 'day', 'week', 'month' yoki 'year' bo'lishi kerak"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(remaining_trend(followee, period, "all"))
 
 
 class FollowersListView(generics.ListAPIView):

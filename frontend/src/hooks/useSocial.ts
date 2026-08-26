@@ -1,9 +1,10 @@
 "use client";
 
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiClient } from "@/lib/api-client";
 import type { Paginated } from "@/types/api";
+import type { RemainingTrendPoint } from "@/hooks/useStats";
 import type { FollowingRelation, FollowRelation } from "@/types/social";
 
 function useInvalidateFollowQueries() {
@@ -72,4 +73,20 @@ export function useFollowers() {
   return useInfiniteQuery(
     paginatedListOptions<FollowRelation>(["social", "followers"], "/social/followers/")
   );
+}
+
+// Fixed to "week" — this is the compact sparkline on a followee's card, not
+// the full tabbed chart from /stats, so there's no period switcher to wire
+// up. 404/403 (relation gone, or they turned visibility off) just leave the
+// sparkline empty rather than erroring the whole card — see
+// FolloweeProfileView, which renders nothing when `data` is undefined.
+export function useFolloweeRemainingTrend(relationId: number) {
+  return useQuery({
+    queryKey: ["social", "following", relationId, "remaining-trend"],
+    queryFn: () =>
+      apiClient.get<RemainingTrendPoint[]>(
+        `/social/following/${relationId}/remaining-trend/?period=week`
+      ),
+    retry: false,
+  });
 }
