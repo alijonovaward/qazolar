@@ -54,7 +54,9 @@ export function MiniTrendSparkline({ data }: { data: RemainingTrendPoint[] }) {
   const accent = isDark ? ACCENT_COLOR.dark : ACCENT_COLOR.light;
 
   return (
-    <div className="h-16 w-full">
+    // Same 224px RemainingTrendChart uses on /stats — sized to match, not
+    // a smaller "preview" of it.
+    <div className="h-56 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
           {/* Invisible — its only job is applying the zoomed domain below,
