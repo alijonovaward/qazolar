@@ -2,13 +2,24 @@
 
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
-import { Area, AreaChart, ResponsiveContainer } from "recharts";
+import { Area, AreaChart, ResponsiveContainer, YAxis } from "recharts";
 
 import type { RemainingTrendPoint } from "@/hooks/useStats";
 
 const emptySubscribe = () => () => {};
 function useMounted() {
   return useSyncExternalStore(emptySubscribe, () => true, () => false);
+}
+
+// Same zoom RemainingTrendChart.tsx uses — without it, a real remaining
+// count in the thousands makes a day-to-day swing of a few dozen round down
+// to a flat line (the exact "chichib qo'yding" complaint: it stopped
+// looking like a chart). Padding to the data's own range, not always
+// starting at 0, is what lets the shape actually show.
+function paddedDomain([dataMin, dataMax]: readonly [number, number]): [number, number] {
+  const range = dataMax - dataMin;
+  const padding = Math.max(Math.ceil(range * 0.1), 1);
+  return [Math.max(dataMin - padding, 0), dataMax + padding];
 }
 
 // De-emphasis gray for the line itself — this is a glance-only sparkline
@@ -43,9 +54,12 @@ export function MiniTrendSparkline({ data }: { data: RemainingTrendPoint[] }) {
   const accent = isDark ? ACCENT_COLOR.dark : ACCENT_COLOR.light;
 
   return (
-    <div className="h-10 min-w-0 flex-1">
+    <div className="h-16 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+          {/* Invisible — its only job is applying the zoomed domain below,
+              not showing ticks/labels (this stays an axis-less sparkline). */}
+          <YAxis hide domain={paddedDomain} />
           <Area
             type="monotone"
             dataKey="remaining"

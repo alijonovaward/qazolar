@@ -54,20 +54,22 @@ export function FolloweeProfileView({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        {/* The sparkline carries the "how's it trending" job on its own now
-            — no separate static progress bar needed alongside it, and no
-            click-to-expand step: it's just always here. */}
-        {trend && trend.length > 0 && <MiniTrendSparkline data={trend} />}
-        <span className="ml-auto shrink-0 text-xs font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
+      <div className="flex items-center gap-2 text-xs">
+        <span className="font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
           {profile.percent_complete}%
         </span>
         {!!profile.current_streak && (
-          <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-400">
+          <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-400">
             🔥 {profile.current_streak}
           </span>
         )}
       </div>
+
+      {/* Its own full-width row, not squeezed next to the percent — a
+          sparkline needs real height to show its shape at all, and
+          cramming it into a thin strip beside other text just flattened it
+          into a barely-there line. */}
+      {trend && trend.length > 0 && <MiniTrendSparkline data={trend} />}
 
       {profile.visibility === "full" && profile.records && (
         <div className="flex flex-col gap-1.5">
