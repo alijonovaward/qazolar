@@ -11,6 +11,7 @@ from .services import sync_zikr_count
 from .throttles import ZikrSyncThrottle
 
 from datetime import timedelta
+from django.db.models import Q
 
 
 class ZikrListView(generics.ListAPIView):
@@ -22,7 +23,7 @@ class ZikrListView(generics.ListAPIView):
 
     chegara = timezone.now().date() - timedelta(days=1)
 
-    queryset = Zikr.objects.filter(is_active=True, completed_at__gte=chegara)
+    queryset = Zikr.objects.filter(is_active=True).filter( Q(completed_at__isnull=True) | Q(completed_at__gte=chegara))
 
 
 class ZikrSyncView(APIView):
