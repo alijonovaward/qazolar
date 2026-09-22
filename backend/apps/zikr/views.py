@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.response import Response
@@ -8,6 +10,8 @@ from .serializers import ZikrSerializer, ZikrSyncSerializer
 from .services import sync_zikr_count
 from .throttles import ZikrSyncThrottle
 
+from datetime import timedelta
+
 
 class ZikrListView(generics.ListAPIView):
     """Admin-curated, short list — never paginated (see apps.social's
@@ -15,7 +19,10 @@ class ZikrListView(generics.ListAPIView):
 
     serializer_class = ZikrSerializer
     pagination_class = None
-    queryset = Zikr.objects.filter(is_active=True)
+
+    chegara = timezone.now().date() - timedelta(days=1)
+
+    queryset = Zikr.objects.filter(is_active=True, completed_at__gte=chegara)
 
 
 class ZikrSyncView(APIView):
