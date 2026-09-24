@@ -13,8 +13,18 @@ import { useMe } from "@/hooks/useMe";
 import { useQazoRecords, useQazoSummary } from "@/hooks/useQazoRecords";
 import type { DailyLogField, PrayerCode } from "@/types/prayer";
 
+// NOT toISOString().slice(0, 10) — that converts to UTC first, so between
+// 00:00 and 04:59 local time in Tashkent (UTC+5) it still reports
+// *yesterday's* date. A tap right after midnight would then log against
+// yesterday instead of today, and the streak wouldn't budge until ~05:00.
+// Reading the local year/month/day components keeps this on the device's
+// own calendar day.
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export default function DashboardPage() {
