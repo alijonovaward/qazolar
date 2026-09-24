@@ -16,14 +16,23 @@ from django.db.models import Q
 
 class ZikrListView(generics.ListAPIView):
     """Admin-curated, short list — never paginated (see apps.social's
-    followers/following for the pattern used when a list *can* grow large)."""
+    followers/following for the pattern used when a list *can* grow large).
+    A completed zikr stays visible for 1 day after completed_at, then drops
+    out — still-in-progress ones (completed_at is null) are never hidden."""
 
     serializer_class = ZikrSerializer
     pagination_class = None
 
-    chegara = timezone.now().date() - timedelta(days=1)
-
-    queryset = Zikr.objects.filter(is_active=True).filter( Q(completed_at__isnull=True) | Q(completed_at__gte=chegara))
+    def get_queryset(self):
+        # Computed per-request, not at class-definition time — a class-body
+        # assignment like `chegara = timezone.now().date() - ...` only ever
+        # runs once, when this module is first imported (i.e. once per
+        # gunicorn worker startup), so it silently freezes at whatever date
+        # the server happened to start on instead of tracking "yesterday".
+        chegara = timezone.now().date() - timedelta(days=1)
+        return Zikr.objects.filter(is_active=True).filter(
+            Q(completed_at__isnull=True) | Q(completed_at__date__gte=chegara)
+        )
 
 
 class ZikrSyncView(APIView):

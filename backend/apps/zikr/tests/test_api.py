@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 import pytest
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.accounts.models import User
@@ -62,6 +65,24 @@ class TestZikrList:
         response = client_a.get("/api/zikr/")
         # a plain list/array, not a {count, results} envelope
         assert isinstance(response.data, list)
+
+    def test_in_progress_zikr_is_always_shown_regardless_of_age(self, client_a, zikr):
+        zikr.created_at = timezone.now() - timedelta(days=400)
+        zikr.save(update_fields=["created_at"])
+        response = client_a.get("/api/zikr/")
+        assert len(response.data) == 1
+
+    def test_completed_within_the_last_day_is_still_shown(self, client_a, zikr):
+        zikr.completed_at = timezone.now() - timedelta(hours=12)
+        zikr.save(update_fields=["completed_at"])
+        response = client_a.get("/api/zikr/")
+        assert len(response.data) == 1
+
+    def test_completed_more_than_a_day_ago_is_hidden(self, client_a, zikr):
+        zikr.completed_at = timezone.now() - timedelta(days=2)
+        zikr.save(update_fields=["completed_at"])
+        response = client_a.get("/api/zikr/")
+        assert response.data == []
 
 
 class TestZikrTopContributors:
