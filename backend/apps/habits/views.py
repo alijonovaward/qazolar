@@ -4,14 +4,9 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Habit, HabitLog
-from .serializers import (
-    HabitAddProgressSerializer,
-    HabitLogSerializer,
-    HabitSerializer,
-    HabitWriteSerializer,
-)
-from .services import add_habit_progress
+from .models import Habit
+from .serializers import HabitAddProgressSerializer, HabitSerializer, HabitWriteSerializer
+from .services import add_habit_progress, habit_trend
 
 
 class HabitListCreateView(generics.ListCreateAPIView):
@@ -62,14 +57,11 @@ class HabitAddProgressView(APIView):
         return Response(HabitSerializer(habit).data)
 
 
-class HabitLogListView(generics.ListAPIView):
-    """Recent daily history for one habit — capped, not paginated, same
-    reasoning as apps.zikr's TapLog list: a short recent slice, not a
-    browsable full archive."""
+class HabitTrendView(APIView):
+    """Last 14 days for one habit's chart, zero-filled (see
+    services.habit_trend) — a continuous window, not just the days that
+    happen to have a log row."""
 
-    serializer_class = HabitLogSerializer
-    pagination_class = None
-
-    def get_queryset(self):
-        habit = get_object_or_404(Habit, pk=self.kwargs["pk"], user=self.request.user)
-        return habit.logs.order_by("-date")[:30]
+    def get(self, request, pk):
+        habit = get_object_or_404(Habit, pk=pk, user=request.user)
+        return Response(habit_trend(habit))

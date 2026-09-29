@@ -4,13 +4,16 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 
 import { formatCount } from "@/components/zikr/utils";
-import { useAddHabitProgress, useArchiveHabit } from "@/hooks/useHabits";
+import { useAddHabitProgress, useArchiveHabit, useHabitTrend } from "@/hooks/useHabits";
 import type { Habit } from "@/types/habit";
+
+import { HabitTrendChart } from "./HabitTrendChart";
 
 export function HabitRow({ habit }: { habit: Habit }) {
   const [amount, setAmount] = useState("");
   const addProgress = useAddHabitProgress();
   const archive = useArchiveHabit();
+  const { data: trend } = useHabitTrend(habit.id);
 
   function handleAdd(event: FormEvent) {
     event.preventDefault();
@@ -76,6 +79,11 @@ export function HabitRow({ habit }: { habit: Habit }) {
           Arxivlash
         </button>
       </form>
+
+      {/* Always visible, not behind a click-to-expand toggle — kecha va
+          bugungi holatni solishtirish uchun shu yerning o'zida turishi
+          kerak, alohida qadam talab qilmasdan. */}
+      {trend && <HabitTrendChart data={trend} unit={habit.unit} dailyTarget={habit.daily_target} />}
     </div>
   );
 }

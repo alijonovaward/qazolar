@@ -153,13 +153,22 @@ class TestHabitDetail:
         assert client_b.patch(f"/api/habits/{habit.id}/", {"name": "x"}, format="json").status_code == 404
 
 
-class TestHabitLogList:
-    def test_returns_recent_logs_newest_first(self, client_a, habit):
-        add(client_a, habit.id, 1000)
-        response = client_a.get(f"/api/habits/{habit.id}/logs/")
+class TestHabitTrend:
+    def test_returns_a_fixed_14_day_window_oldest_first(self, client_a, habit):
+        today = timezone.localdate()
+        response = client_a.get(f"/api/habits/{habit.id}/trend/")
         assert response.status_code == 200
-        assert response.data[0]["amount"] == 1000
+        assert len(response.data) == 14
+        assert response.data[0]["date"] == (today - timedelta(days=13)).isoformat()
+        assert response.data[-1]["date"] == today.isoformat()
 
-    def test_non_owner_cannot_see_someone_elses_habit_logs(self, client_b, habit):
-        response = client_b.get(f"/api/habits/{habit.id}/logs/")
+    def test_days_with_no_activity_are_zero_filled_not_skipped(self, client_a, habit):
+        add(client_a, habit.id, 1000)  # only today has a log
+        response = client_a.get(f"/api/habits/{habit.id}/trend/")
+        amounts = [row["amount"] for row in response.data]
+        assert amounts[-1] == 1000
+        assert amounts[:-1] == [0] * 13
+
+    def test_non_owner_cannot_see_someone_elses_habit_trend(self, client_b, habit):
+        response = client_b.get(f"/api/habits/{habit.id}/trend/")
         assert response.status_code == 404

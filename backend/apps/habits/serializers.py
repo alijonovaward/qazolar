@@ -1,7 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Habit, HabitLog
+from .models import Habit
 from .services import habit_streak
 
 
@@ -53,9 +53,3 @@ class HabitWriteSerializer(serializers.ModelSerializer):
 
 class HabitAddProgressSerializer(serializers.Serializer):
     amount = serializers.IntegerField(min_value=1)
-
-
-class HabitLogSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = HabitLog
-        fields = ["date", "amount"]

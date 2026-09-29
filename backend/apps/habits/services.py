@@ -17,6 +17,30 @@ def add_habit_progress(habit: Habit, date: date_type, amount: int) -> HabitLog:
     return log
 
 
+TREND_WINDOW_DAYS = 14
+
+
+def habit_trend(habit: Habit, window_days: int = TREND_WINDOW_DAYS) -> list[dict]:
+    """Last `window_days` days, oldest first, one entry per calendar day —
+    days with no log are zero-filled (not skipped), so a bar chart shows a
+    real, continuous week/fortnight instead of bars jammed together
+    wherever activity happened to occur."""
+    today = timezone.localdate()
+    window_start = today - timedelta(days=window_days - 1)
+    amounts_by_date = dict(
+        HabitLog.objects.filter(habit=habit, date__gte=window_start, date__lte=today).values_list(
+            "date", "amount"
+        )
+    )
+    return [
+        {
+            "date": (window_start + timedelta(days=offset)).isoformat(),
+            "amount": amounts_by_date.get(window_start + timedelta(days=offset), 0),
+        }
+        for offset in range(window_days)
+    ]
+
+
 def habit_streak(habit: Habit) -> int:
     """Consecutive days (ending today) with any logged amount > 0 — same
     convention as apps.prayers.services.forecast.current_streak (any

@@ -29,7 +29,7 @@ export function useAddHabitProgress() {
       apiClient.post<Habit>(`/habits/${id}/add/`, { amount }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["habits"] });
-      queryClient.invalidateQueries({ queryKey: ["habits", "logs"] });
+      queryClient.invalidateQueries({ queryKey: ["habits", "trend"] });
     },
   });
 }
@@ -43,9 +43,9 @@ export function useArchiveHabit() {
   });
 }
 
-export function useHabitLogs(id: number) {
+export function useHabitTrend(id: number) {
   return useQuery({
-    queryKey: ["habits", "logs", id],
-    queryFn: () => apiClient.get<HabitLogEntry[]>(`/habits/${id}/logs/`),
+    queryKey: ["habits", "trend", id],
+    queryFn: () => apiClient.get<HabitLogEntry[]>(`/habits/${id}/trend/`),
   });
 }
