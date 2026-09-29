@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "apps.prayers",
     "apps.social",
     "apps.zikr",
+    "apps.habits",
 ]
 
 MIDDLEWARE = [

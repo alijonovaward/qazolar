@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/', include('apps.prayers.urls')),
     path('api/', include('apps.social.urls')),
     path('api/', include('apps.zikr.urls')),
+    path('api/', include('apps.habits.urls')),
 ]
 
 if settings.DEBUG:

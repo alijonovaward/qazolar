@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/stats", label: "Statistika" },
   { href: "/zikr", label: "Zikrlar" },
+  { href: "/habits", label: "Vazifalar" },
   { href: "/social", label: "Do'stlar" },
   { href: "/setup", label: "Sozlash" },
 ];
