@@ -17,7 +17,12 @@ export function proxy(request: NextRequest) {
   }
 
   if (!hasSession) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    // Preserved so a shared-habit invite link (or any deep link) lands the
+    // user back where they were headed once they log in, instead of always
+    // dumping them on /dashboard — see LoginForm's read of this param.
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("next", pathname + request.nextUrl.search);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();

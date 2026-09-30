@@ -4,12 +4,15 @@ import { useState } from "react";
 
 import { CollectiveHabitRow } from "@/components/habits/CollectiveHabitRow";
 import { HabitRow } from "@/components/habits/HabitRow";
+import { IncomingSharedHabitInvites } from "@/components/habits/IncomingSharedHabitInvites";
 import { NewHabitForm } from "@/components/habits/NewHabitForm";
-import { useCollectiveHabits, useHabits } from "@/hooks/useHabits";
+import { SharedHabitRow } from "@/components/habits/SharedHabitRow";
+import { useCollectiveHabits, useHabits, useSharedHabits } from "@/hooks/useHabits";
 
 export default function HabitsPage() {
   const { data: habits, isLoading } = useHabits();
   const { data: collectiveHabits, isLoading: collectiveLoading } = useCollectiveHabits();
+  const { data: sharedHabits, isLoading: sharedLoading } = useSharedHabits();
   const [showForm, setShowForm] = useState(false);
 
   return (
@@ -24,6 +27,8 @@ export default function HabitsPage() {
           {showForm ? "Bekor qilish" : "+ Yangi vazifa"}
         </button>
       </div>
+
+      <IncomingSharedHabitInvites />
 
       {showForm && <NewHabitForm onDone={() => setShowForm(false)} />}
 
@@ -40,6 +45,20 @@ export default function HabitsPage() {
             <HabitRow key={habit.id} habit={habit} />
           ))}
         </div>
+      )}
+
+      {/* 3-bosqich: o'zim yaratgan yoki taklif/link orqali qo'shilgan —
+          hech qachon umumiy ro'yxat emas. Faqat menda biror shunday vazifa
+          bo'lsagina ko'rinadi. */}
+      {!sharedLoading && !!sharedHabits?.length && (
+        <>
+          <h2 className="mt-2 text-lg font-semibold">Sherikli vazifalar</h2>
+          <div className="flex flex-col gap-3">
+            {sharedHabits.map((habit) => (
+              <SharedHabitRow key={habit.id} habit={habit} />
+            ))}
+          </div>
+        </>
       )}
 
       {/* Admin-curated, hammaga ochiq — shaxsiy vazifalardan farqli, bularni

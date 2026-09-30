@@ -5,11 +5,48 @@ from django.utils import timezone
 
 from apps.accounts.models import User
 
-from .models import CollectiveHabit, Habit, HabitLog, UserCollectiveHabitCount
+from .models import (
+    CollectiveHabit,
+    Habit,
+    HabitLog,
+    SharedHabit,
+    SharedHabitMember,
+    UserCollectiveHabitCount,
+)
 
 # Same reasoning as apps.zikr.services.MAX_SYNC_DELTA — a sanity ceiling
 # against a scripted/spammed request, not a real usage limit.
 MAX_COLLECTIVE_DELTA = 5000
+
+
+def _sync_capped_counter(delta: int, locked, member_model, member_fk_field: str, user: User):
+    """Shared body of sync_collective_habit and sync_shared_habit — both are
+    'cumulative shared total, capped at target, completed_at set once' over
+    a locked row, differing only in which member model tracks the per-user
+    contribution and what it calls its parent FK."""
+    delta = max(min(delta, MAX_COLLECTIVE_DELTA), 0)
+    if delta == 0:
+        return locked
+
+    capacity = max(locked.target_count - locked.current_count, 0)
+    delta = min(delta, capacity)
+    if delta == 0:
+        return locked
+
+    locked.current_count += delta
+    update_fields = ["current_count", "updated_at"]
+    if locked.completed_at is None and locked.current_count >= locked.target_count:
+        locked.completed_at = timezone.now()
+        update_fields.append("completed_at")
+    locked.save(update_fields=update_fields)
+
+    member, _created = member_model.objects.select_for_update().get_or_create(
+        user=user, **{member_fk_field: locked}
+    )
+    member.count += delta
+    member.save(update_fields=["count", "updated_at"])
+
+    return locked
 
 
 def add_habit_progress(habit: Habit, date: date_type, amount: int) -> HabitLog:
@@ -51,31 +88,36 @@ def sync_collective_habit(user: User, collective_habit: CollectiveHabit, delta: 
     """Same shape as apps.zikr.services.sync_zikr_count — cumulative on both
     the shared total and this user's own contribution, capped at
     target_count, completed_at set once the first time it's reached."""
-    delta = max(min(delta, MAX_COLLECTIVE_DELTA), 0)
-    if delta == 0:
-        return collective_habit
-
     with transaction.atomic():
         locked = CollectiveHabit.objects.select_for_update().get(pk=collective_habit.pk)
-        capacity = max(locked.target_count - locked.current_count, 0)
-        delta = min(delta, capacity)
-        if delta == 0:
-            return locked
+        return _sync_capped_counter(delta, locked, UserCollectiveHabitCount, "collective_habit", user)
 
-        locked.current_count += delta
-        update_fields = ["current_count", "updated_at"]
-        if locked.completed_at is None and locked.current_count >= locked.target_count:
-            locked.completed_at = timezone.now()
-            update_fields.append("completed_at")
-        locked.save(update_fields=update_fields)
 
-        user_count, _created = UserCollectiveHabitCount.objects.select_for_update().get_or_create(
-            user=user, collective_habit=locked
+def create_shared_habit(creator: User, name: str, unit: str, target_count: int) -> SharedHabit:
+    """The creator is a member from the start — see SharedHabitListCreateView,
+    which lists 'everything I'm a member of', not 'everything I created'."""
+    with transaction.atomic():
+        shared_habit = SharedHabit.objects.create(
+            creator=creator, name=name, unit=unit, target_count=target_count
         )
-        user_count.count += delta
-        user_count.save(update_fields=["count", "updated_at"])
+        SharedHabitMember.objects.create(shared_habit=shared_habit, user=creator)
+    return shared_habit
 
-    return locked
+
+def sync_shared_habit(user: User, shared_habit: SharedHabit, delta: int) -> SharedHabit:
+    """Same cumulative/capped pattern as sync_collective_habit — the caller
+    (see views.SharedHabitSyncView) has already checked membership; this
+    just does the counting."""
+    with transaction.atomic():
+        locked = SharedHabit.objects.select_for_update().get(pk=shared_habit.pk)
+        return _sync_capped_counter(delta, locked, SharedHabitMember, "shared_habit", user)
+
+
+def join_shared_habit(user: User, shared_habit: SharedHabit) -> SharedHabitMember:
+    """Idempotent — joining twice (e.g. clicking an already-used link) just
+    returns the existing membership rather than erroring."""
+    member, _created = SharedHabitMember.objects.get_or_create(shared_habit=shared_habit, user=user)
+    return member
 
 
 def habit_streak(habit: Habit) -> int:

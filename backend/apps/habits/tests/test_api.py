@@ -5,19 +5,26 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.accounts.models import User
-from apps.habits.models import CollectiveHabit, Habit, HabitLog
+from apps.habits.models import (
+    CollectiveHabit,
+    Habit,
+    HabitLog,
+    SharedHabit,
+    SharedHabitInvite,
+    SharedHabitMember,
+)
 
 pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
 def user_a():
-    return User.objects.create(email="a@test.com")
+    return User.objects.create(email="a@test.com", username="user_a")
 
 
 @pytest.fixture
 def user_b():
-    return User.objects.create(email="b@test.com")
+    return User.objects.create(email="b@test.com", username="user_b")
 
 
 @pytest.fixture
@@ -31,6 +38,18 @@ def client_a(user_a):
 def client_b(user_b):
     client = APIClient()
     client.force_authenticate(user=user_b)
+    return client
+
+
+@pytest.fixture
+def user_c():
+    return User.objects.create(email="c@test.com", username="user_c")
+
+
+@pytest.fixture
+def client_c(user_c):
+    client = APIClient()
+    client.force_authenticate(user=user_c)
     return client
 
 
@@ -262,3 +281,183 @@ class TestCollectiveHabitTopContributors:
     def test_excludes_zero_contributors(self, client_a, collective_habit):
         response = client_a.get("/api/collective-habits/")
         assert response.data[0]["top_contributors"] == []
+
+
+def create_shared(client, name="Jamoaviy o'qish", unit="bet", target_count=200):
+    return client.post(
+        "/api/shared-habits/", {"name": name, "unit": unit, "target_count": target_count}, format="json"
+    )
+
+
+def sync_shared(client, shared_habit_id, delta):
+    return client.post(f"/api/shared-habits/{shared_habit_id}/sync/", {"delta": delta}, format="json")
+
+
+def invite(client, shared_habit_id, username):
+    return client.post(
+        f"/api/shared-habits/{shared_habit_id}/invites/", {"username": username}, format="json"
+    )
+
+
+class TestSharedHabitCreate:
+    def test_creator_becomes_a_member_automatically(self, client_a, user_a):
+        response = create_shared(client_a)
+        assert response.status_code == 201
+        shared_habit_id = response.data["id"]
+        assert SharedHabitMember.objects.filter(shared_habit_id=shared_habit_id, user=user_a).exists()
+        assert response.data["is_creator"] is True
+        assert response.data["participant_count"] == 1
+
+    def test_never_shown_to_an_uninvolved_user(self, client_a, client_b):
+        create_shared(client_a)
+        response = client_b.get("/api/shared-habits/")
+        # unlike CollectiveHabit, this is never a public/open list
+        assert response.data == []
+
+    def test_creator_sees_it_in_their_own_list(self, client_a):
+        create_shared(client_a)
+        response = client_a.get("/api/shared-habits/")
+        assert len(response.data) == 1
+
+    def test_has_a_unique_invite_token(self, client_a):
+        first = create_shared(client_a, name="A")
+        second = create_shared(client_a, name="B")
+        assert first.data["invite_token"] != second.data["invite_token"]
+
+
+class TestSharedHabitSync:
+    def test_a_member_can_add_progress(self, client_a):
+        shared_habit_id = create_shared(client_a, target_count=1000).data["id"]
+        response = sync_shared(client_a, shared_habit_id, 50)
+        assert response.status_code == 200
+        assert response.data["current_count"] == 50
+        assert response.data["my_count"] == 50
+
+    def test_a_non_member_cannot_add_progress(self, client_a, client_b):
+        shared_habit_id = create_shared(client_a).data["id"]
+        response = sync_shared(client_b, shared_habit_id, 10)
+        assert response.status_code == 404
+
+    def test_is_cumulative_across_members(self, client_a, client_b, user_b):
+        shared_habit_id = create_shared(client_a, target_count=1000).data["id"]
+        SharedHabitMember.objects.create(
+            shared_habit_id=shared_habit_id, user=user_b
+        )  # joined some other way
+        sync_shared(client_a, shared_habit_id, 40)
+        response = sync_shared(client_b, shared_habit_id, 30)
+        assert response.data["current_count"] == 70
+
+    def test_clamped_at_target_and_sets_completed_at(self, client_a):
+        shared_habit_id = create_shared(client_a, target_count=100).data["id"]
+        response = sync_shared(client_a, shared_habit_id, 500)
+        assert response.data["current_count"] == 100
+        assert response.data["completed_at"] is not None
+
+
+class TestSharedHabitJoinByLink:
+    def test_join_via_token_creates_membership(self, client_a, client_b, user_b):
+        created = create_shared(client_a)
+        token = created.data["invite_token"]
+        response = client_b.post(f"/api/shared-habits/join/{token}/")
+        assert response.status_code == 200
+        assert SharedHabitMember.objects.filter(
+            shared_habit_id=created.data["id"], user=user_b
+        ).exists()
+
+    def test_joining_appears_in_the_joiners_own_list(self, client_a, client_b):
+        created = create_shared(client_a)
+        client_b.post(f"/api/shared-habits/join/{created.data['invite_token']}/")
+        response = client_b.get("/api/shared-habits/")
+        assert len(response.data) == 1
+        assert response.data[0]["is_creator"] is False
+
+    def test_joining_twice_does_not_error(self, client_a, client_b):
+        created = create_shared(client_a)
+        token = created.data["invite_token"]
+        client_b.post(f"/api/shared-habits/join/{token}/")
+        response = client_b.post(f"/api/shared-habits/join/{token}/")
+        assert response.status_code == 200
+
+    def test_unknown_token_404s(self, client_a):
+        response = client_a.post("/api/shared-habits/join/does-not-exist/")
+        assert response.status_code == 404
+
+
+class TestSharedHabitInvite:
+    def test_creator_can_invite_by_username(self, client_a, user_b):
+        shared_habit_id = create_shared(client_a).data["id"]
+        response = invite(client_a, shared_habit_id, user_b.username)
+        assert response.status_code == 201
+        assert response.data["invitee"]["id"] == user_b.id
+
+    def test_non_creator_member_cannot_invite(self, client_a, client_b, client_c, user_c):
+        created = create_shared(client_a)
+        client_b.post(f"/api/shared-habits/join/{created.data['invite_token']}/")
+        response = invite(client_b, created.data["id"], user_c.username)
+        assert response.status_code == 404
+
+    def test_cannot_invite_an_already_invited_user(self, client_a, user_b):
+        shared_habit_id = create_shared(client_a).data["id"]
+        invite(client_a, shared_habit_id, user_b.username)
+        response = invite(client_a, shared_habit_id, user_b.username)
+        assert response.status_code == 400
+
+    def test_cannot_invite_an_existing_member(self, client_a, client_b, user_b):
+        created = create_shared(client_a)
+        client_b.post(f"/api/shared-habits/join/{created.data['invite_token']}/")
+        response = invite(client_a, created.data["id"], user_b.username)
+        assert response.status_code == 400
+
+    def test_cannot_invite_nonexistent_username(self, client_a):
+        shared_habit_id = create_shared(client_a).data["id"]
+        response = invite(client_a, shared_habit_id, "nobody_here")
+        assert response.status_code == 404
+
+    def test_invitee_sees_it_in_incoming(self, client_a, client_b, user_b):
+        shared_habit_id = create_shared(client_a).data["id"]
+        invite(client_a, shared_habit_id, user_b.username)
+        response = client_b.get("/api/shared-habits/invites/incoming/")
+        assert len(response.data) == 1
+        assert response.data[0]["shared_habit"]["id"] == shared_habit_id
+
+    def test_inviter_does_not_see_it_in_their_own_incoming(self, client_a, user_b):
+        shared_habit_id = create_shared(client_a).data["id"]
+        invite(client_a, shared_habit_id, user_b.username)
+        response = client_a.get("/api/shared-habits/invites/incoming/")
+        assert response.data == []
+
+    def test_accepting_creates_membership_and_removes_the_invite(self, client_a, client_b, user_b):
+        shared_habit_id = create_shared(client_a).data["id"]
+        invite_id = invite(client_a, shared_habit_id, user_b.username).data["id"]
+        response = client_b.post(f"/api/shared-habits/invites/{invite_id}/accept/")
+        assert response.status_code == 200
+        assert SharedHabitMember.objects.filter(shared_habit_id=shared_habit_id, user=user_b).exists()
+        assert not SharedHabitInvite.objects.filter(id=invite_id).exists()
+
+    def test_invitee_can_decline(self, client_a, client_b, user_b):
+        shared_habit_id = create_shared(client_a).data["id"]
+        invite_id = invite(client_a, shared_habit_id, user_b.username).data["id"]
+        response = client_b.delete(f"/api/shared-habits/invites/{invite_id}/")
+        assert response.status_code == 204
+        assert not SharedHabitMember.objects.filter(shared_habit_id=shared_habit_id, user=user_b).exists()
+
+    def test_inviter_can_cancel(self, client_a, user_b):
+        shared_habit_id = create_shared(client_a).data["id"]
+        invite_id = invite(client_a, shared_habit_id, user_b.username).data["id"]
+        response = client_a.delete(f"/api/shared-habits/invites/{invite_id}/")
+        assert response.status_code == 204
+
+    def test_uninvolved_user_cannot_remove_someone_elses_invite(self, client_a, client_c, user_b):
+        shared_habit_id = create_shared(client_a).data["id"]
+        invite_id = invite(client_a, shared_habit_id, user_b.username).data["id"]
+        response = client_c.delete(f"/api/shared-habits/invites/{invite_id}/")
+        assert response.status_code == 404
+        assert SharedHabitInvite.objects.filter(id=invite_id).exists()
+
+    def test_accepting_frees_up_a_fresh_invite_later(self, client_a, client_b, user_b):
+        # not a realistic flow (already a member), but confirms the invite
+        # row itself doesn't linger and block a future re-invite scenario
+        shared_habit_id = create_shared(client_a).data["id"]
+        invite_id = invite(client_a, shared_habit_id, user_b.username).data["id"]
+        client_b.post(f"/api/shared-habits/invites/{invite_id}/accept/")
+        assert SharedHabitInvite.objects.filter(shared_habit_id=shared_habit_id).count() == 0

@@ -1,14 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import type { FormEvent } from "react";
 
 import { apiClient, ApiError } from "@/lib/api-client";
 
+// Only ever a same-site path (set by proxy.ts from the page the user was
+// actually headed to) — reject anything else so this can't become an open
+// redirect via a crafted ?next= value.
+function safeNextPath(value: string | null): string {
+  if (value && value.startsWith("/") && !value.startsWith("//")) return value;
+  return "/dashboard";
+}
+
 export function LoginForm() {
   const router = useRouter();
+  const next = safeNextPath(useSearchParams().get("next"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +29,7 @@ export function LoginForm() {
     setLoading(true);
     try {
       await apiClient.post("/auth/login/", { email, password });
-      router.push("/dashboard");
+      router.push(next);
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Xatolik yuz berdi");

@@ -139,6 +139,7 @@ REST_FRAMEWORK = {
         "follow-request": "20/day",
         "zikr-sync": "30/min",
         "collective-habit-sync": "30/min",
+        "shared-habit-invite": "20/day",
     },
     "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.DefaultPagination",
     "PAGE_SIZE": 30,

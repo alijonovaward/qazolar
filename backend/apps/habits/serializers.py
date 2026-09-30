@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from apps.social.serializers import MiniUserSerializer
 
-from .models import CollectiveHabit, Habit
+from .models import CollectiveHabit, Habit, SharedHabit, SharedHabitInvite
 from .services import habit_streak
 
 
@@ -108,3 +108,78 @@ class CollectiveHabitSerializer(serializers.ModelSerializer):
 
 class CollectiveHabitSyncSerializer(serializers.Serializer):
     delta = serializers.IntegerField(min_value=1)
+
+
+class SharedHabitSerializer(serializers.ModelSerializer):
+    percent_complete = serializers.FloatField(read_only=True)
+    remaining = serializers.IntegerField(read_only=True)
+    duration_days = serializers.IntegerField(read_only=True)
+    participant_count = serializers.SerializerMethodField()
+    my_count = serializers.SerializerMethodField()
+    top_contributors = serializers.SerializerMethodField()
+    is_creator = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SharedHabit
+        fields = [
+            "id",
+            "name",
+            "unit",
+            "target_count",
+            "current_count",
+            "percent_complete",
+            "remaining",
+            "participant_count",
+            "my_count",
+            "top_contributors",
+            "is_creator",
+            "invite_token",
+            "created_at",
+            "completed_at",
+            "duration_days",
+        ]
+
+    def get_participant_count(self, obj: SharedHabit) -> int:
+        return obj.members.count()
+
+    def get_my_count(self, obj: SharedHabit) -> int:
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return 0
+        member = obj.members.filter(user=request.user).first()
+        return member.count if member else 0
+
+    def get_top_contributors(self, obj: SharedHabit) -> list[dict]:
+        top = obj.members.filter(count__gt=0).select_related("user").order_by("-count")[:3]
+        return TopContributorSerializer(top, many=True).data
+
+    def get_is_creator(self, obj: SharedHabit) -> bool:
+        request = self.context.get("request")
+        return bool(request and request.user.is_authenticated and obj.creator_id == request.user.id)
+
+
+class SharedHabitCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SharedHabit
+        fields = ["name", "unit", "target_count"]
+
+
+class SharedHabitSyncSerializer(serializers.Serializer):
+    delta = serializers.IntegerField(min_value=1)
+
+
+class SharedHabitInviteCreateSerializer(serializers.Serializer):
+    username = serializers.CharField()
+
+
+class SharedHabitInviteSerializer(serializers.ModelSerializer):
+    shared_habit = serializers.SerializerMethodField()
+    invited_by = MiniUserSerializer(read_only=True)
+    invitee = MiniUserSerializer(read_only=True)
+
+    class Meta:
+        model = SharedHabitInvite
+        fields = ["id", "shared_habit", "invited_by", "invitee", "created_at"]
+
+    def get_shared_habit(self, obj: SharedHabitInvite) -> dict:
+        return {"id": obj.shared_habit_id, "name": obj.shared_habit.name}
