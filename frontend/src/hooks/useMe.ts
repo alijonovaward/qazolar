@@ -18,7 +18,9 @@ export function useUpdateMe() {
 
   return useMutation({
     mutationFn: (
-      data: Partial<Pick<User, "gender" | "birth_date" | "follower_visibility" | "username">>
+      data: Partial<
+        Pick<User, "gender" | "birth_date" | "follower_visibility" | "username" | "nickname">
+      >
     ) =>
       apiClient.patch<User>("/profile/me/", data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["me"] }),

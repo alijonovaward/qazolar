@@ -43,7 +43,16 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "email", "username", "gender", "birth_date", "follower_visibility", "created_at"]
+        fields = [
+            "id",
+            "email",
+            "username",
+            "nickname",
+            "gender",
+            "birth_date",
+            "follower_visibility",
+            "created_at",
+        ]
         read_only_fields = ["id", "email", "created_at"]
 
     def validate_username(self, value):
@@ -56,6 +65,11 @@ class UserSerializer(serializers.ModelSerializer):
         if existing.exists():
             raise serializers.ValidationError("Bu username allaqachon band.")
         return value
+
+    def validate_nickname(self, value):
+        # No uniqueness check on purpose — this is a display label, not a
+        # lookup handle, so two people sharing one is fine.
+        return value.strip() or None if value else None
 
 
 class MenstruationPeriodSerializer(serializers.ModelSerializer):

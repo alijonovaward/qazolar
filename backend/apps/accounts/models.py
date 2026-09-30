@@ -51,6 +51,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(
         max_length=32, unique=True, null=True, blank=True, validators=[username_validator]
     )
+    # Purely cosmetic display name — not unique, no format restriction, never
+    # used for lookup (follow-by-username/invite-by-username still go
+    # through `username` above). apps.social.utils.displayName() prefers
+    # this over username/email wherever a person's identity is shown to
+    # others (leaderboards, follower lists).
+    nickname = models.CharField(max_length=50, blank=True, null=True)
     gender = models.CharField(
         max_length=20, choices=Gender.choices, default=Gender.UNSPECIFIED
     )

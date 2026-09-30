@@ -149,6 +149,34 @@ class TestUsernameField:
         assert client_b.get("/api/profile/me/").data["username"] is None
 
 
+class TestNicknameField:
+    def _client(self, email="user@test.com"):
+        user = User.objects.create_user(email=email, password="a-strong-pw-93")
+        client = APIClient()
+        client.post("/api/auth/login/", {"email": email, "password": "a-strong-pw-93"}, format="json")
+        return client, user
+
+    def test_can_set_a_nickname(self):
+        client, _ = self._client()
+        response = client.patch("/api/profile/me/", {"nickname": "Botir aka"}, format="json")
+        assert response.status_code == 200
+        assert response.data["nickname"] == "Botir aka"
+
+    def test_two_users_can_share_the_same_nickname(self):
+        client_a, _ = self._client("a@test.com")
+        client_b, _ = self._client("b@test.com")
+        assert client_a.patch("/api/profile/me/", {"nickname": "Bek"}, format="json").status_code == 200
+        assert client_b.patch("/api/profile/me/", {"nickname": "Bek"}, format="json").status_code == 200
+
+    def test_blank_nickname_is_stored_as_null(self):
+        client, user = self._client()
+        client.patch("/api/profile/me/", {"nickname": "Bek"}, format="json")
+        response = client.patch("/api/profile/me/", {"nickname": "  "}, format="json")
+        assert response.status_code == 200
+        user.refresh_from_db()
+        assert user.nickname is None
+
+
 @patch("apps.accounts.views.send_otp_email.delay")
 class TestPasswordReset:
     def test_reset_flow_changes_password(self, mock_send):

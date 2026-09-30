@@ -6,6 +6,7 @@ export type FollowStatus = "pending" | "accepted";
 export interface MiniUser {
   id: number;
   username: string | null;
+  nickname: string | null;
   email: string;
 }
 
