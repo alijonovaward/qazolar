@@ -1,30 +1,17 @@
-"use client";
-
-import { useState } from "react";
-import type { FormEvent } from "react";
+import Link from "next/link";
 
 import { formatCount } from "@/components/zikr/utils";
-import { useAddHabitProgress, useArchiveHabit, useHabitTrend } from "@/hooks/useHabits";
 import type { Habit } from "@/types/habit";
 
-import { HabitTrendChart } from "./HabitTrendChart";
-
+// Compact list row — just enough to decide "which one do I want to open":
+// name, streak, and today's number. The quick-add form, archive button, and
+// history chart all live on the detail page (/habits/[id]) now, not here.
 export function HabitRow({ habit }: { habit: Habit }) {
-  const [amount, setAmount] = useState("");
-  const addProgress = useAddHabitProgress();
-  const archive = useArchiveHabit();
-  const { data: trend } = useHabitTrend(habit.id);
-
-  function handleAdd(event: FormEvent) {
-    event.preventDefault();
-    const value = Number(amount);
-    if (!value || value <= 0) return;
-    addProgress.mutate({ id: habit.id, amount: value });
-    setAmount("");
-  }
-
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+    <Link
+      href={`/habits/${habit.id}`}
+      className="flex flex-col gap-2 rounded-xl border border-neutral-200 p-4 transition-colors hover:border-neutral-400 dark:border-neutral-800 dark:hover:border-neutral-600"
+    >
       <div className="flex items-center justify-between text-sm">
         <span className="min-w-0 truncate font-medium">{habit.name}</span>
         {!!habit.current_streak && (
@@ -52,38 +39,6 @@ export function HabitRow({ habit }: { habit: Habit }) {
           Bugun: {formatCount(habit.today_amount)} {habit.unit}
         </p>
       )}
-
-      <form onSubmit={handleAdd} className="flex flex-wrap items-center gap-2">
-        <input
-          type="number"
-          inputMode="numeric"
-          min={1}
-          value={amount}
-          onChange={(event) => setAmount(event.target.value)}
-          placeholder={`+ ${habit.unit}`}
-          className="min-h-9 w-24 min-w-0 rounded-lg border border-neutral-300 bg-transparent px-2 text-sm dark:border-neutral-700"
-        />
-        <button
-          type="submit"
-          disabled={addProgress.isPending}
-          className="min-h-9 shrink-0 rounded-full bg-emerald-600 px-3 text-sm font-medium text-white disabled:opacity-50"
-        >
-          Qo&apos;shish
-        </button>
-        <button
-          type="button"
-          onClick={() => archive.mutate(habit.id)}
-          disabled={archive.isPending}
-          className="ml-auto min-h-9 shrink-0 rounded-full border border-red-300 px-2.5 text-xs font-medium text-red-600 disabled:opacity-50 dark:border-red-800 dark:text-red-400"
-        >
-          Arxivlash
-        </button>
-      </form>
-
-      {/* Always visible, not behind a click-to-expand toggle — kecha va
-          bugungi holatni solishtirish uchun shu yerning o'zida turishi
-          kerak, alohida qadam talab qilmasdan. */}
-      {trend && <HabitTrendChart data={trend} unit={habit.unit} dailyTarget={habit.daily_target} />}
-    </div>
+    </Link>
   );
 }
