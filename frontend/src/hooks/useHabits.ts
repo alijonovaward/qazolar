@@ -13,15 +13,16 @@ import type {
   SharedHabitInvite,
 } from "@/types/habit";
 
-// Same 10s cadence as apps.zikr's collective counter — a tab that's just
-// watching (not tapping) still needs to see other people's contributions
-// arrive on its own.
-const COLLECTIVE_REFETCH_INTERVAL_MS = 10_000;
+// Same 10s cadence as apps.zikr's collective counter — a detail page left
+// open (own habit or a shared/collective one someone else is also tapping)
+// stays current on its own, no manual refresh needed.
+const REFETCH_INTERVAL_MS = 10_000;
 
 export function useHabits() {
   return useQuery({
     queryKey: ["habits"],
     queryFn: () => apiClient.get<Habit[]>("/habits/"),
+    refetchInterval: REFETCH_INTERVAL_MS,
   });
 }
 
@@ -60,6 +61,7 @@ export function useHabitTrend(id: number) {
   return useQuery({
     queryKey: ["habits", "trend", id],
     queryFn: () => apiClient.get<HabitLogEntry[]>(`/habits/${id}/trend/`),
+    refetchInterval: REFETCH_INTERVAL_MS,
   });
 }
 
@@ -67,7 +69,7 @@ export function useCollectiveHabits() {
   return useQuery({
     queryKey: ["collective-habits"],
     queryFn: () => apiClient.get<CollectiveHabit[]>("/collective-habits/"),
-    refetchInterval: COLLECTIVE_REFETCH_INTERVAL_MS,
+    refetchInterval: REFETCH_INTERVAL_MS,
   });
 }
 
@@ -88,7 +90,7 @@ export function useSharedHabits() {
   return useQuery({
     queryKey: ["shared-habits"],
     queryFn: () => apiClient.get<SharedHabit[]>("/shared-habits/"),
-    refetchInterval: COLLECTIVE_REFETCH_INTERVAL_MS,
+    refetchInterval: REFETCH_INTERVAL_MS,
   });
 }
 
