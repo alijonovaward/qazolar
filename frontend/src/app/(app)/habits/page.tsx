@@ -32,6 +32,10 @@ export default function HabitsPage() {
 
       {showForm && <NewHabitForm onDone={() => setShowForm(false)} />}
 
+      {/* Har bir bo'lim sarlavhasi bilan — "Sherikli"/"Jamoaviy" nomlangan
+          bo'lsa-yu, shaxsiylari nomlanmasa, ro'yxatga kirgan odam qaysi
+          qatorlar shaxsiy ekanini taxmin qilishga majbur bo'lardi. */}
+      <h2 className="mt-2 text-lg font-semibold">Shaxsiy vazifalar</h2>
       {isLoading ? (
         <p className="text-sm text-neutral-500">Yuklanmoqda...</p>
       ) : !habits?.length ? (
