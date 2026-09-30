@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 
+import { CollectiveHabitRow } from "@/components/habits/CollectiveHabitRow";
 import { HabitRow } from "@/components/habits/HabitRow";
 import { NewHabitForm } from "@/components/habits/NewHabitForm";
-import { useHabits } from "@/hooks/useHabits";
+import { useCollectiveHabits, useHabits } from "@/hooks/useHabits";
 
 export default function HabitsPage() {
   const { data: habits, isLoading } = useHabits();
+  const { data: collectiveHabits, isLoading: collectiveLoading } = useCollectiveHabits();
   const [showForm, setShowForm] = useState(false);
 
   return (
@@ -38,6 +40,20 @@ export default function HabitsPage() {
             <HabitRow key={habit.id} habit={habit} />
           ))}
         </div>
+      )}
+
+      {/* Admin-curated, hammaga ochiq — shaxsiy vazifalardan farqli, bularni
+          o'zingiz yaratmaysiz, faqat hissa qo'shasiz. Ro'yxatda hech biri
+          bo'lmasa, bo'limning o'zi ham ko'rinmaydi. */}
+      {!collectiveLoading && !!collectiveHabits?.length && (
+        <>
+          <h2 className="mt-2 text-lg font-semibold">Jamoaviy vazifalar</h2>
+          <div className="flex flex-col gap-3">
+            {collectiveHabits.map((habit) => (
+              <CollectiveHabitRow key={habit.id} habit={habit} />
+            ))}
+          </div>
+        </>
       )}
     </main>
   );

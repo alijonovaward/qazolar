@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Habit, HabitLog
+from .models import CollectiveHabit, Habit, HabitLog, UserCollectiveHabitCount
 
 
 @admin.register(Habit)
@@ -15,3 +15,26 @@ class HabitLogAdmin(admin.ModelAdmin):
     list_display = ["habit", "date", "amount"]
     list_filter = ["date"]
     date_hierarchy = "date"
+
+
+@admin.register(CollectiveHabit)
+class CollectiveHabitAdmin(admin.ModelAdmin):
+    list_display = [
+        "order",
+        "name",
+        "unit",
+        "target_count",
+        "current_count",
+        "is_active",
+        "created_at",
+        "completed_at",
+    ]
+    list_display_links = ["name"]
+    list_editable = ["is_active", "order"]
+    ordering = ["order", "id"]
+
+
+@admin.register(UserCollectiveHabitCount)
+class UserCollectiveHabitCountAdmin(admin.ModelAdmin):
+    list_display = ["user", "collective_habit", "count"]
+    list_filter = ["collective_habit"]

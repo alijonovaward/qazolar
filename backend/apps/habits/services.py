@@ -3,7 +3,13 @@ from datetime import date as date_type, timedelta
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Habit, HabitLog
+from apps.accounts.models import User
+
+from .models import CollectiveHabit, Habit, HabitLog, UserCollectiveHabitCount
+
+# Same reasoning as apps.zikr.services.MAX_SYNC_DELTA — a sanity ceiling
+# against a scripted/spammed request, not a real usage limit.
+MAX_COLLECTIVE_DELTA = 5000
 
 
 def add_habit_progress(habit: Habit, date: date_type, amount: int) -> HabitLog:
@@ -39,6 +45,37 @@ def habit_trend(habit: Habit, window_days: int = TREND_WINDOW_DAYS) -> list[dict
         }
         for offset in range(window_days)
     ]
+
+
+def sync_collective_habit(user: User, collective_habit: CollectiveHabit, delta: int) -> CollectiveHabit:
+    """Same shape as apps.zikr.services.sync_zikr_count — cumulative on both
+    the shared total and this user's own contribution, capped at
+    target_count, completed_at set once the first time it's reached."""
+    delta = max(min(delta, MAX_COLLECTIVE_DELTA), 0)
+    if delta == 0:
+        return collective_habit
+
+    with transaction.atomic():
+        locked = CollectiveHabit.objects.select_for_update().get(pk=collective_habit.pk)
+        capacity = max(locked.target_count - locked.current_count, 0)
+        delta = min(delta, capacity)
+        if delta == 0:
+            return locked
+
+        locked.current_count += delta
+        update_fields = ["current_count", "updated_at"]
+        if locked.completed_at is None and locked.current_count >= locked.target_count:
+            locked.completed_at = timezone.now()
+            update_fields.append("completed_at")
+        locked.save(update_fields=update_fields)
+
+        user_count, _created = UserCollectiveHabitCount.objects.select_for_update().get_or_create(
+            user=user, collective_habit=locked
+        )
+        user_count.count += delta
+        user_count.save(update_fields=["count", "updated_at"])
+
+    return locked
 
 
 def habit_streak(habit: Habit) -> int:

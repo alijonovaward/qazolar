@@ -9,6 +9,14 @@ export interface MiniUser {
   email: string;
 }
 
+// One user's rank in a collective-counter leaderboard — shared by
+// apps.zikr's Zikr and apps.habits' CollectiveHabit, both of which expose
+// the exact same {user, count} shape for their top_contributors field.
+export interface Contributor {
+  user: MiniUser;
+  count: number;
+}
+
 export interface FollowRelation {
   id: number;
   follower: MiniUser;

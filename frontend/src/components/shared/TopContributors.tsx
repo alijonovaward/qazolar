@@ -1,12 +1,14 @@
 import { displayName } from "@/components/social/utils";
 import { formatCount } from "@/components/zikr/utils";
-import type { ZikrContributor } from "@/types/zikr";
+import type { Contributor } from "@/types/social";
 
-// Medal emoji, not a plain "1./2./3." — a leaderboard for a collective
-// dhikr goal is meant to feel celebratory, not like a spreadsheet rank.
+// Medal emoji, not a plain "1./2./3." — a leaderboard for a collective goal
+// is meant to feel celebratory, not like a spreadsheet rank. Shared by
+// apps.zikr's Zikr and apps.habits' CollectiveHabit — same {user, count}
+// shape either way.
 const MEDALS = ["🥇", "🥈", "🥉"];
 
-export function TopContributors({ contributors }: { contributors: ZikrContributor[] }) {
+export function TopContributors({ contributors }: { contributors: Contributor[] }) {
   if (contributors.length === 0) return null;
 
   return (

@@ -5,7 +5,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.accounts.models import User
-from apps.habits.models import Habit, HabitLog
+from apps.habits.models import CollectiveHabit, Habit, HabitLog
 
 pytestmark = pytest.mark.django_db
 
@@ -41,6 +41,17 @@ def habit(user_a):
 
 def add(client, habit_id, amount):
     return client.post(f"/api/habits/{habit_id}/add/", {"amount": amount}, format="json")
+
+
+@pytest.fixture
+def collective_habit():
+    return CollectiveHabit.objects.create(name="Jamoaviy yurish", unit="qadam", target_count=1000)
+
+
+def sync_collective(client, collective_habit_id, delta):
+    return client.post(
+        f"/api/collective-habits/{collective_habit_id}/sync/", {"delta": delta}, format="json"
+    )
 
 
 class TestHabitListCreate:
@@ -172,3 +183,82 @@ class TestHabitTrend:
     def test_non_owner_cannot_see_someone_elses_habit_trend(self, client_b, habit):
         response = client_b.get(f"/api/habits/{habit.id}/trend/")
         assert response.status_code == 404
+
+
+class TestCollectiveHabitList:
+    def test_lists_active_collective_habits(self, client_a, collective_habit):
+        response = client_a.get("/api/collective-habits/")
+        assert response.status_code == 200
+        assert len(response.data) == 1
+        assert response.data[0]["name"] == "Jamoaviy yurish"
+
+    def test_hides_inactive_collective_habits(self, client_a, collective_habit):
+        collective_habit.is_active = False
+        collective_habit.save()
+        response = client_a.get("/api/collective-habits/")
+        assert response.data == []
+
+    def test_is_not_paginated(self, client_a, collective_habit):
+        response = client_a.get("/api/collective-habits/")
+        assert isinstance(response.data, list)
+
+    def test_completed_more_than_a_day_ago_is_hidden(self, client_a, collective_habit):
+        collective_habit.completed_at = timezone.now() - timedelta(days=2)
+        collective_habit.save()
+        response = client_a.get("/api/collective-habits/")
+        assert response.data == []
+
+
+class TestCollectiveHabitSync:
+    def test_increments_the_shared_total(self, client_a, collective_habit):
+        response = sync_collective(client_a, collective_habit.id, 50)
+        assert response.status_code == 200
+        assert response.data["current_count"] == 50
+
+    def test_is_cumulative_across_different_users(self, client_a, client_b, collective_habit):
+        sync_collective(client_a, collective_habit.id, 50)
+        response = sync_collective(client_b, collective_habit.id, 30)
+        assert response.data["current_count"] == 80
+
+    def test_tracks_each_users_own_contribution_separately(
+        self, client_a, client_b, collective_habit, user_a, user_b
+    ):
+        sync_collective(client_a, collective_habit.id, 50)
+        sync_collective(client_b, collective_habit.id, 30)
+        response = client_a.get("/api/collective-habits/")
+        assert response.data[0]["my_count"] == 50
+
+    def test_current_count_is_clamped_at_the_target(self, client_a, collective_habit):
+        response = sync_collective(client_a, collective_habit.id, 5000)  # target is 1000
+        assert response.data["current_count"] == 1000
+        assert response.data["percent_complete"] == 100.0
+
+    def test_sets_completed_at_once_the_target_is_reached(self, client_a, collective_habit):
+        response = sync_collective(client_a, collective_habit.id, 1000)
+        assert response.data["completed_at"] is not None
+
+    def test_rejects_zero_or_negative_delta(self, client_a, collective_habit):
+        response = sync_collective(client_a, collective_habit.id, 0)
+        assert response.status_code == 400
+
+    def test_404_for_inactive_collective_habit(self, client_a, collective_habit):
+        collective_habit.is_active = False
+        collective_habit.save()
+        response = sync_collective(client_a, collective_habit.id, 10)
+        assert response.status_code == 404
+
+
+class TestCollectiveHabitTopContributors:
+    def test_ranks_contributors_by_count_descending(
+        self, client_a, client_b, collective_habit, user_b
+    ):
+        sync_collective(client_a, collective_habit.id, 10)
+        sync_collective(client_b, collective_habit.id, 30)
+        response = client_a.get("/api/collective-habits/")
+        top = response.data[0]["top_contributors"]
+        assert [row["count"] for row in top] == [30, 10]
+        assert top[0]["user"]["id"] == user_b.id
+
+    def test_excludes_zero_contributors(self, client_a, collective_habit):
+        response = client_a.get("/api/collective-habits/")
+        assert response.data[0]["top_contributors"] == []

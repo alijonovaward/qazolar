@@ -1,17 +1,14 @@
-from django.utils import timezone
-
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.queryset_utils import excluding_stale_completions
+
 from .models import Zikr
 from .serializers import ZikrSerializer, ZikrSyncSerializer
 from .services import sync_zikr_count
 from .throttles import ZikrSyncThrottle
-
-from datetime import timedelta
-from django.db.models import Q
 
 
 class ZikrListView(generics.ListAPIView):
@@ -24,15 +21,7 @@ class ZikrListView(generics.ListAPIView):
     pagination_class = None
 
     def get_queryset(self):
-        # Computed per-request, not at class-definition time — a class-body
-        # assignment like `chegara = timezone.now().date() - ...` only ever
-        # runs once, when this module is first imported (i.e. once per
-        # gunicorn worker startup), so it silently freezes at whatever date
-        # the server happened to start on instead of tracking "yesterday".
-        chegara = timezone.now().date() - timedelta(days=1)
-        return Zikr.objects.filter(is_active=True).filter(
-            Q(completed_at__isnull=True) | Q(completed_at__date__gte=chegara)
-        )
+        return excluding_stale_completions(Zikr.objects.filter(is_active=True))
 
 
 class ZikrSyncView(APIView):

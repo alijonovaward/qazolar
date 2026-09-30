@@ -4,9 +4,18 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Habit
-from .serializers import HabitAddProgressSerializer, HabitSerializer, HabitWriteSerializer
-from .services import add_habit_progress, habit_trend
+from apps.core.queryset_utils import excluding_stale_completions
+
+from .models import CollectiveHabit, Habit
+from .serializers import (
+    CollectiveHabitSerializer,
+    CollectiveHabitSyncSerializer,
+    HabitAddProgressSerializer,
+    HabitSerializer,
+    HabitWriteSerializer,
+)
+from .services import add_habit_progress, habit_trend, sync_collective_habit
+from .throttles import CollectiveHabitSyncThrottle
 
 
 class HabitListCreateView(generics.ListCreateAPIView):
@@ -65,3 +74,27 @@ class HabitTrendView(APIView):
     def get(self, request, pk):
         habit = get_object_or_404(Habit, pk=pk, user=request.user)
         return Response(habit_trend(habit))
+
+
+class CollectiveHabitListView(generics.ListAPIView):
+    """2-bosqich: admin-curated, hammaga ochiq — apps.zikr.ZikrListView bilan
+    bir xil naqsh (never paginated, stale-completion hiding)."""
+
+    serializer_class = CollectiveHabitSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        return excluding_stale_completions(CollectiveHabit.objects.filter(is_active=True))
+
+
+class CollectiveHabitSyncView(APIView):
+    throttle_classes = [CollectiveHabitSyncThrottle]
+
+    def post(self, request, pk):
+        collective_habit = get_object_or_404(CollectiveHabit, pk=pk, is_active=True)
+        serializer = CollectiveHabitSyncSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        collective_habit = sync_collective_habit(
+            request.user, collective_habit, serializer.validated_data["delta"]
+        )
+        return Response(CollectiveHabitSerializer(collective_habit, context={"request": request}).data)

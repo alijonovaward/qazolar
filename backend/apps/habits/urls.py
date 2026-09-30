@@ -7,4 +7,14 @@ urlpatterns = [
     path("habits/<int:pk>/", views.HabitDetailView.as_view(), name="habit-detail"),
     path("habits/<int:pk>/add/", views.HabitAddProgressView.as_view(), name="habit-add-progress"),
     path("habits/<int:pk>/trend/", views.HabitTrendView.as_view(), name="habit-trend"),
+    path(
+        "collective-habits/",
+        views.CollectiveHabitListView.as_view(),
+        name="collective-habit-list",
+    ),
+    path(
+        "collective-habits/<int:pk>/sync/",
+        views.CollectiveHabitSyncView.as_view(),
+        name="collective-habit-sync",
+    ),
 ]

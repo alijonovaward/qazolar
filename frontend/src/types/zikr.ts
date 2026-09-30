@@ -1,9 +1,4 @@
-import type { MiniUser } from "@/types/social";
-
-export interface ZikrContributor {
-  user: MiniUser;
-  count: number;
-}
+import type { Contributor } from "@/types/social";
 
 export interface Zikr {
   id: number;
@@ -16,7 +11,7 @@ export interface Zikr {
   remaining: number;
   participant_count: number;
   my_count: number;
-  top_contributors: ZikrContributor[];
+  top_contributors: Contributor[];
   created_at: string;
   completed_at: string | null;
   duration_days: number | null;
