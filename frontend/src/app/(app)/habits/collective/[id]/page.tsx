@@ -80,7 +80,11 @@ export default function CollectiveHabitDetailPage() {
         </p>
       </div>
 
-      <TopContributors contributors={habit.top_contributors} />
+      <TopContributors
+        contributors={habit.top_contributors}
+        myRank={habit.my_rank}
+        myCount={habit.my_count}
+      />
 
       {!isComplete && (
         <form

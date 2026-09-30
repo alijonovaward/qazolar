@@ -11,6 +11,7 @@ export interface Zikr {
   remaining: number;
   participant_count: number;
   my_count: number;
+  my_rank: number | null;
   top_contributors: Contributor[];
   created_at: string;
   completed_at: string | null;

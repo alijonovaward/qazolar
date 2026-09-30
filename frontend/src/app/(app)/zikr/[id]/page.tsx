@@ -197,7 +197,11 @@ export default function ZikrCountPage() {
         )}
       </div>
 
-      <TopContributors contributors={zikr.top_contributors} />
+      <TopContributors
+        contributors={zikr.top_contributors}
+        myRank={zikr.my_rank}
+        myCount={myDisplayedCount}
+      />
 
       {/* On the bottom half of the screen — this is what gets tapped over
           and over, so it belongs where a thumb comfortably reaches. */}

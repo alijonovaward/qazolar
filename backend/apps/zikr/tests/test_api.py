@@ -94,18 +94,17 @@ class TestZikrTopContributors:
         assert [row["count"] for row in top] == [30, 10]
         assert top[0]["user"]["id"] == user_b.id
 
-    def test_caps_at_three_even_with_more_contributors(self, client_a, client_b, zikr, user_a, user_b):
-        user_c = User.objects.create(email="c@test.com")
-        user_d = User.objects.create(email="d@test.com")
-        for user, amount in [(user_a, 10), (user_b, 20), (user_c, 30), (user_d, 40)]:
+    def test_caps_at_ten_even_with_more_contributors(self, client_a, zikr):
+        users = [User.objects.create(email=f"contributor{i}@test.com") for i in range(12)]
+        for i, user in enumerate(users):
             client = APIClient()
             client.force_authenticate(user=user)
-            sync(client, zikr.id, amount)
+            sync(client, zikr.id, i + 1)
 
         response = client_a.get("/api/zikr/")
         top = response.data[0]["top_contributors"]
-        assert len(top) == 3
-        assert [row["count"] for row in top] == [40, 30, 20]
+        assert len(top) == 10
+        assert [row["count"] for row in top] == [12, 11, 10, 9, 8, 7, 6, 5, 4, 3]
 
     def test_excludes_zero_contributors(self, client_a, zikr):
         # user_a authenticates but never taps — shouldn't appear as a
@@ -120,6 +119,22 @@ class TestZikrTopContributors:
         response = client_a.get("/api/zikr/")
         top = response.data[0]["top_contributors"]
         assert top[0]["user"]["username"] == "zikr_master"
+
+    def test_my_rank_is_null_without_any_contribution(self, client_a, zikr):
+        response = client_a.get("/api/zikr/")
+        assert response.data[0]["my_rank"] is None
+
+    def test_my_rank_reflects_position_among_contributors(self, client_a, client_b, zikr):
+        sync(client_a, zikr.id, 10)
+        sync(client_b, zikr.id, 30)
+        response = client_a.get("/api/zikr/")
+        assert response.data[0]["my_rank"] == 2
+
+    def test_tied_counts_share_a_rank(self, client_a, client_b, zikr):
+        sync(client_a, zikr.id, 20)
+        sync(client_b, zikr.id, 20)
+        response = client_a.get("/api/zikr/")
+        assert response.data[0]["my_rank"] == 1
 
 
 class TestZikrSync:

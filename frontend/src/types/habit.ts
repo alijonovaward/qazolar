@@ -36,6 +36,7 @@ export interface CollectiveHabit {
   remaining: number;
   participant_count: number;
   my_count: number;
+  my_rank: number | null;
   top_contributors: Contributor[];
   created_at: string;
   completed_at: string | null;
@@ -55,6 +56,7 @@ export interface SharedHabit {
   remaining: number;
   participant_count: number;
   my_count: number;
+  my_rank: number | null;
   top_contributors: Contributor[];
   is_creator: boolean;
   invite_token: string;

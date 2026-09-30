@@ -13,6 +13,16 @@ class MiniUserSerializer(serializers.ModelSerializer):
         fields = ["id", "username", "email"]
 
 
+class TopContributorSerializer(serializers.Serializer):
+    """One row of a collective-counter leaderboard — shaped straight off a
+    per-user contribution instance (it already has exactly .user and
+    .count). Shared by apps.zikr.Zikr, apps.habits.CollectiveHabit, and
+    apps.habits.SharedHabit (see apps.core.serializers.LeaderboardMixin)."""
+
+    user = MiniUserSerializer()
+    count = serializers.IntegerField()
+
+
 class FollowRequestCreateSerializer(serializers.Serializer):
     username = serializers.CharField()
 

@@ -1,6 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
 
+from apps.core.serializers import LeaderboardMixin
 from apps.social.serializers import MiniUserSerializer
 
 from .models import CollectiveHabit, Habit, SharedHabit, SharedHabitInvite
@@ -57,20 +58,15 @@ class HabitAddProgressSerializer(serializers.Serializer):
     amount = serializers.IntegerField(min_value=1)
 
 
-class TopContributorSerializer(serializers.Serializer):
-    """Shaped straight off a UserCollectiveHabitCount instance (it already
-    has exactly .user and .count) — same as apps.zikr's version."""
+class CollectiveHabitSerializer(LeaderboardMixin, serializers.ModelSerializer):
+    member_related_name = "user_counts"
 
-    user = MiniUserSerializer()
-    count = serializers.IntegerField()
-
-
-class CollectiveHabitSerializer(serializers.ModelSerializer):
     percent_complete = serializers.FloatField(read_only=True)
     remaining = serializers.IntegerField(read_only=True)
     duration_days = serializers.IntegerField(read_only=True)
     participant_count = serializers.SerializerMethodField()
     my_count = serializers.SerializerMethodField()
+    my_rank = serializers.SerializerMethodField()
     top_contributors = serializers.SerializerMethodField()
 
     class Meta:
@@ -85,37 +81,27 @@ class CollectiveHabitSerializer(serializers.ModelSerializer):
             "remaining",
             "participant_count",
             "my_count",
+            "my_rank",
             "top_contributors",
             "created_at",
             "completed_at",
             "duration_days",
         ]
 
-    def get_participant_count(self, obj: CollectiveHabit) -> int:
-        return obj.user_counts.filter(count__gt=0).count()
-
-    def get_my_count(self, obj: CollectiveHabit) -> int:
-        request = self.context.get("request")
-        if request is None or not request.user.is_authenticated:
-            return 0
-        user_count = obj.user_counts.filter(user=request.user).first()
-        return user_count.count if user_count else 0
-
-    def get_top_contributors(self, obj: CollectiveHabit) -> list[dict]:
-        top = obj.user_counts.filter(count__gt=0).select_related("user").order_by("-count")[:3]
-        return TopContributorSerializer(top, many=True).data
-
 
 class CollectiveHabitSyncSerializer(serializers.Serializer):
     delta = serializers.IntegerField(min_value=1)
 
 
-class SharedHabitSerializer(serializers.ModelSerializer):
+class SharedHabitSerializer(LeaderboardMixin, serializers.ModelSerializer):
+    member_related_name = "members"
+
     percent_complete = serializers.FloatField(read_only=True)
     remaining = serializers.IntegerField(read_only=True)
     duration_days = serializers.IntegerField(read_only=True)
     participant_count = serializers.SerializerMethodField()
     my_count = serializers.SerializerMethodField()
+    my_rank = serializers.SerializerMethodField()
     top_contributors = serializers.SerializerMethodField()
     is_creator = serializers.SerializerMethodField()
 
@@ -131,6 +117,7 @@ class SharedHabitSerializer(serializers.ModelSerializer):
             "remaining",
             "participant_count",
             "my_count",
+            "my_rank",
             "top_contributors",
             "is_creator",
             "invite_token",
@@ -140,18 +127,13 @@ class SharedHabitSerializer(serializers.ModelSerializer):
         ]
 
     def get_participant_count(self, obj: SharedHabit) -> int:
+        # Overrides LeaderboardMixin's "count__gt=0" version on purpose —
+        # membership here is an explicit join/accept step (see
+        # SharedHabitMember), so someone who joined but hasn't logged
+        # anything yet is still a real participant, unlike Zikr/
+        # CollectiveHabit where a contribution row only exists once you've
+        # actually tapped.
         return obj.members.count()
-
-    def get_my_count(self, obj: SharedHabit) -> int:
-        request = self.context.get("request")
-        if request is None or not request.user.is_authenticated:
-            return 0
-        member = obj.members.filter(user=request.user).first()
-        return member.count if member else 0
-
-    def get_top_contributors(self, obj: SharedHabit) -> list[dict]:
-        top = obj.members.filter(count__gt=0).select_related("user").order_by("-count")[:3]
-        return TopContributorSerializer(top, many=True).data
 
     def get_is_creator(self, obj: SharedHabit) -> bool:
         request = self.context.get("request")

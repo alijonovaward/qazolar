@@ -282,6 +282,28 @@ class TestCollectiveHabitTopContributors:
         response = client_a.get("/api/collective-habits/")
         assert response.data[0]["top_contributors"] == []
 
+    def test_caps_at_ten_even_with_more_contributors(self, client_a, collective_habit):
+        users = [User.objects.create(email=f"contributor{i}@test.com") for i in range(12)]
+        for i, user in enumerate(users):
+            client = APIClient()
+            client.force_authenticate(user=user)
+            sync_collective(client, collective_habit.id, i + 1)
+
+        response = client_a.get("/api/collective-habits/")
+        top = response.data[0]["top_contributors"]
+        assert len(top) == 10
+        assert [row["count"] for row in top] == [12, 11, 10, 9, 8, 7, 6, 5, 4, 3]
+
+    def test_my_rank_is_null_without_any_contribution(self, client_a, collective_habit):
+        response = client_a.get("/api/collective-habits/")
+        assert response.data[0]["my_rank"] is None
+
+    def test_my_rank_reflects_position_among_contributors(self, client_a, client_b, collective_habit):
+        sync_collective(client_a, collective_habit.id, 10)
+        sync_collective(client_b, collective_habit.id, 30)
+        response = client_a.get("/api/collective-habits/")
+        assert response.data[0]["my_rank"] == 2
+
 
 def create_shared(client, name="Jamoaviy o'qish", unit="bet", target_count=200):
     return client.post(
@@ -352,6 +374,19 @@ class TestSharedHabitSync:
         response = sync_shared(client_a, shared_habit_id, 500)
         assert response.data["current_count"] == 100
         assert response.data["completed_at"] is not None
+
+    def test_my_rank_is_null_before_contributing(self, client_a):
+        create_shared(client_a)
+        response = client_a.get("/api/shared-habits/")
+        assert response.data[0]["my_rank"] is None
+
+    def test_my_rank_reflects_position_among_members(self, client_a, client_b, user_b):
+        created = create_shared(client_a, target_count=1000)
+        client_b.post(f"/api/shared-habits/join/{created.data['invite_token']}/")
+        sync_shared(client_a, created.data["id"], 10)
+        sync_shared(client_b, created.data["id"], 30)
+        response = client_a.get("/api/shared-habits/")
+        assert response.data[0]["my_rank"] == 2
 
 
 class TestSharedHabitJoinByLink:
