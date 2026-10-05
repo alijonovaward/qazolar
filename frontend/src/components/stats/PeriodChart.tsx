@@ -73,6 +73,11 @@ export function PeriodChart({ data }: { data: StatsBucket[] }) {
   // on a phone). Only below a bar-count threshold: past that the bars are too
   // narrow for a label to fit without overlapping its neighbors.
   const showLabels = data.length <= 14;
+  // Same fix as RemainingTrendChart/HabitTrendChart — a fixed width clips
+  // the leading digit once a bucket's total runs 5 digits (an active
+  // month/year of completions adds up fast).
+  const widestValue = Math.max(...data.map((bucket) => bucket.total_completed));
+  const yAxisWidth = String(Math.round(widestValue)).length * 7 + 10;
 
   return (
     <div className="flex flex-col gap-1">
@@ -107,7 +112,7 @@ export function PeriodChart({ data }: { data: StatsBucket[] }) {
             tick={{ fill: isDark ? TEXT_COLOR.dark : TEXT_COLOR.light, fontSize: 12 }}
             axisLine={false}
             tickLine={false}
-            width={28}
+            width={yAxisWidth}
           />
           <Tooltip
             content={<PeriodTooltip color={barColor} isDark={isDark} />}

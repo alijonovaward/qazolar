@@ -106,6 +106,13 @@ export function RemainingTrendChart({ data }: { data: RemainingTrendPoint[] }) {
   // Lower is better (less qazo left) — green for a drop, red for a rise.
   const deltaIsGood = delta <= 0;
 
+  // A fixed width (was 32) clips the leading digit once remaining counts
+  // run 5 digits — rakat-weighting (vs a raw qazo-instance count) pushes
+  // most real backlogs past 4 digits, so this can't stay a guess sized for
+  // the old, smaller numbers.
+  const widestLabel = Math.max(...data.map((point) => String(Math.round(point.remaining)).length));
+  const yAxisWidth = widestLabel * 7 + 12;
+
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-baseline gap-2">
@@ -148,7 +155,7 @@ export function RemainingTrendChart({ data }: { data: RemainingTrendPoint[] }) {
             tick={{ fill: isDark ? TEXT_COLOR.dark : TEXT_COLOR.light, fontSize: 12 }}
             axisLine={false}
             tickLine={false}
-            width={32}
+            width={yAxisWidth}
           />
           <Tooltip
             content={<TrendTooltip color={lineColor} isDark={isDark} />}

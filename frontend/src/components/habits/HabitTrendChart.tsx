@@ -85,6 +85,13 @@ export function HabitTrendChart({
   const barColor = isDark ? BAR_COLOR.dark : BAR_COLOR.light;
   const textColor = isDark ? TEXT_COLOR.dark : TEXT_COLOR.light;
 
+  // A fixed width clips the leading digit once a habit's numbers run 5
+  // digits (easy for something like "qadam") — see the same fix on
+  // RemainingTrendChart. dailyTarget is included since the axis has to
+  // stretch to fit its reference line too, not just the bars.
+  const widestValue = Math.max(...data.map((point) => point.amount), dailyTarget ?? 0);
+  const yAxisWidth = String(Math.round(widestValue)).length * 7 + 12;
+
   return (
     <ResponsiveContainer width="100%" height={224} style={{ touchAction: "pan-y" }}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -103,7 +110,7 @@ export function HabitTrendChart({
           tick={{ fill: textColor, fontSize: 12 }}
           axisLine={false}
           tickLine={false}
-          width={32}
+          width={yAxisWidth}
         />
         <Tooltip
           content={<TrendTooltip color={barColor} isDark={isDark} unit={unit} />}
