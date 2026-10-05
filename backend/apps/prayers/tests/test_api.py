@@ -299,8 +299,9 @@ class TestRemainingTrendEndpoint:
         assert response.status_code == 200
         # response.data holds raw Python objects (dates), not yet JSON-rendered
         points = {row["bucket"]: row["remaining"] for row in response.data}
-        assert points[two_days_ago] == 100
-        assert points[today] == 90
+        # rakat-weighted (bomdod = 2 rakat/instance), not a raw qazo count
+        assert points[two_days_ago] == 200
+        assert points[today] == 180
 
     def test_gap_days_are_carried_forward_not_skipped(self, prayer_types, client_a, user_a):
         # No activity on the day in between two_days_ago and today — the series
@@ -318,7 +319,7 @@ class TestRemainingTrendEndpoint:
         buckets = [row["bucket"] for row in response.data]
         points = {row["bucket"]: row["remaining"] for row in response.data}
         assert yesterday in buckets  # not silently dropped
-        assert points[yesterday] == 100  # carried forward from two_days_ago, unchanged
+        assert points[yesterday] == 200  # carried forward from two_days_ago, unchanged
 
     def test_day_window_is_a_fixed_last_14_days_regardless_of_older_history(
         self, prayer_types, client_a, user_a
@@ -335,8 +336,10 @@ class TestRemainingTrendEndpoint:
         # The 150-day-old activity is baked into the live total (2 missed) but
         # its bucket falls outside the window, so the window starts flat at
         # what's left *before* today's +1 and only steps up on today's bucket.
-        assert response.data[0]["remaining"] == 1
-        assert response.data[-1]["remaining"] == 2
+        # rakat-weighted (bomdod = 2 rakat/instance): 1 instance -> 2 rakat,
+        # 2 instances -> 4 rakat.
+        assert response.data[0]["remaining"] == 2
+        assert response.data[-1]["remaining"] == 4
 
     def test_week_window_is_the_last_7_days(self, prayer_types, client_a):
         response = client_a.get("/api/stats/remaining-trend/?period=week&prayer_type=all")
@@ -362,6 +365,26 @@ class TestRemainingTrendEndpoint:
     def test_rejects_bad_period(self, prayer_types, client_a):
         response = client_a.get("/api/stats/remaining-trend/?period=bogus")
         assert response.status_code == 400
+
+    def test_weighs_by_rakat_count_not_raw_qazo_instances(self, prayer_types, client_a, user_a):
+        # A single missed Peshin (4 rakat) isn't the same "amount" of qarz as
+        # a single missed Bomdod (2 rakat) — the chart must reflect that, not
+        # treat one qazo instance as equal to another regardless of prayer.
+        today = timezone.localdate()
+        increment_daily_log(user_a, prayer_types["bomdod"], today, "hazar_missed")  # +2 rakat
+        increment_daily_log(user_a, prayer_types["peshin"], today, "hazar_missed")  # +4 rakat
+
+        response = client_a.get("/api/stats/remaining-trend/?period=day&prayer_type=all")
+        assert response.data[-1]["remaining"] == 6
+
+    def test_qasr_uses_its_own_shortened_rakat_count(self, prayer_types, client_a, user_a):
+        # peshin: 4 rakat hazar, 2 rakat qasr — a safardagi qazo must be
+        # weighted by its own (shorter) count, not the hazar one.
+        today = timezone.localdate()
+        increment_daily_log(user_a, prayer_types["peshin"], today, "qasr_missed")  # +2 rakat
+
+        response = client_a.get("/api/stats/remaining-trend/?period=day&prayer_type=all")
+        assert response.data[-1]["remaining"] == 2
 
 
 class TestForecastEndpoint:

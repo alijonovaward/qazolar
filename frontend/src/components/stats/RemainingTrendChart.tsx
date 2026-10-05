@@ -57,7 +57,7 @@ function TrendTooltip({
     >
       <span className="h-2 w-2 rounded-full" style={{ background: color }} />
       <span className="text-neutral-500">{label ? formatBucket(label) : ""}</span>
-      <span className="font-semibold tabular-nums">{payload[0].value} ta</span>
+      <span className="font-semibold tabular-nums">{payload[0].value} rakat</span>
     </div>
   );
 }
@@ -110,7 +110,7 @@ export function RemainingTrendChart({ data }: { data: RemainingTrendPoint[] }) {
     <div className="flex flex-col gap-1">
       <div className="flex items-baseline gap-2">
         <span className="text-3xl font-semibold tabular-nums">{last}</span>
-        <span className="text-sm text-neutral-500">qoldi</span>
+        <span className="text-sm text-neutral-500">rakat qoldi</span>
         {delta !== 0 && (
           <span
             className={`ml-auto flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums ${

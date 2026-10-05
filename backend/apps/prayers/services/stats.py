@@ -70,12 +70,19 @@ def _bucket_sequence(period: str, start: date, end: date) -> list[date]:
 
 
 def remaining_trend(user: User, period: str, prayer_type_code: str = "all") -> list[dict]:
-    """Total remaining qazo count as of the end of every bucket in a fixed
-    trailing window (see TREND_WINDOWS) — a *continuous* series (gaps between
-    active buckets are carried forward flat, not skipped) so the chart shows
-    the real shape of the debt over the window, not just a line jumping
-    between a couple of far-apart active buckets — and not squashed flat by
-    unrelated history outside the window."""
+    """Remaining qazo **rakat count** (not raw qazo-instance count) as of the
+    end of every bucket in a fixed trailing window (see TREND_WINDOWS) — a
+    *continuous* series (gaps between active buckets are carried forward
+    flat, not skipped) so the chart shows the real shape of the debt over
+    the window, not just a line jumping between a couple of far-apart
+    active buckets — and not squashed flat by unrelated history outside the
+    window.
+
+    Rakat-weighted, matching forecast.remaining_rakats/daily_rakat_rate: a
+    Peshin qazo (4 rakat) and a Bomdod qazo (2 rakat) aren't the same
+    "amount" of debt, and hazar vs qasr (safar) differ too — counting raw
+    qazo instances treated them as interchangeable, which isn't honest
+    about what paying them off actually takes."""
     config = TREND_WINDOWS[period]
     granularity = config["granularity"]
     trunc_fn = TRUNC_FUNCS[granularity]
@@ -83,21 +90,30 @@ def remaining_trend(user: User, period: str, prayer_type_code: str = "all") -> l
     today = timezone.localdate()
     window_start = today - timedelta(days=config["window_days"] - 1)
 
-    records = QazoRecord.objects.filter(user=user)
-    logs = DailyLog.objects.filter(user=user)
+    records = QazoRecord.objects.filter(user=user).select_related("prayer_type")
+    logs = DailyLog.objects.filter(user=user).select_related("prayer_type")
     if prayer_type_code != "all":
         records = records.filter(prayer_type__code=prayer_type_code)
         logs = logs.filter(prayer_type__code=prayer_type_code)
 
-    current_remaining = sum(r.remaining_count for r in records)
+    current_remaining = sum(
+        r.remaining_hazar * r.prayer_type.rakat_count + r.remaining_qasr * r.prayer_type.qasr_rakat_count
+        for r in records
+    )
 
     activity_buckets = list(
         logs.filter(date__gte=window_start, date__lte=today)
         .annotate(bucket=trunc_fn("date"))
         .values("bucket")
         .annotate(
-            missed=Sum(F("hazar_missed_count") + F("qasr_missed_count")),
-            completed=Sum(F("hazar_completed_count") + F("qasr_completed_count")),
+            missed=Sum(
+                F("hazar_missed_count") * F("prayer_type__rakat_count")
+                + F("qasr_missed_count") * F("prayer_type__qasr_rakat_count")
+            ),
+            completed=Sum(
+                F("hazar_completed_count") * F("prayer_type__rakat_count")
+                + F("qasr_completed_count") * F("prayer_type__qasr_rakat_count")
+            ),
         )
         .order_by("bucket")
     )
