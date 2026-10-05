@@ -321,11 +321,16 @@ class TestForecast:
 
 
 class TestStreak:
-    def test_streak_counts_consecutive_days_from_today(self, prayer_types, user_male):
+    def test_streak_counts_consecutive_days_of_net_paydown(self, prayer_types, user_male):
         today = timezone.localdate()
         yesterday = today - timedelta(days=1)
-        for day in (today, yesterday):
-            increment_daily_log(user_male, prayer_types["bomdod"], day, "hazar_missed")
+        seed_day = today - timedelta(days=30)
+        # Pre-existing debt from well outside the streak window, paid down
+        # cleanly (no new misses) on each of the two days under test.
+        for _ in range(4):
+            increment_daily_log(user_male, prayer_types["bomdod"], seed_day, "hazar_missed")
+        for day in (yesterday, today):
+            increment_daily_log(user_male, prayer_types["bomdod"], day, "hazar_completed")
             increment_daily_log(user_male, prayer_types["bomdod"], day, "hazar_completed")
         assert current_streak(user_male) == 2
 
@@ -333,4 +338,65 @@ class TestStreak:
         yesterday = timezone.localdate() - timedelta(days=1)
         increment_daily_log(user_male, prayer_types["bomdod"], yesterday, "hazar_missed")
         increment_daily_log(user_male, prayer_types["bomdod"], yesterday, "hazar_completed")
+        increment_daily_log(user_male, prayer_types["bomdod"], yesterday, "hazar_completed")
         assert current_streak(user_male) == 0
+
+    def test_equal_missed_and_completed_does_not_extend_streak(self, prayer_types, user_male):
+        """+1/-1 on the same prayer nets to zero debt change — this used to
+        count as a streak day just because *something* was completed."""
+        today = timezone.localdate()
+        increment_daily_log(user_male, prayer_types["bomdod"], today, "hazar_missed")
+        increment_daily_log(user_male, prayer_types["bomdod"], today, "hazar_completed")
+        assert current_streak(user_male) == 0
+
+    def test_completing_less_than_newly_missed_does_not_extend_streak(self, prayer_types, user_male):
+        """Paying off 1 rakat of pre-existing debt while logging 5 new
+        missed ones leaves the user further behind than yesterday — not a
+        streak day. This is the exact scenario reported: a +1/-1-style tap
+        pattern shouldn't look like progress."""
+        today = timezone.localdate()
+        seed_day = today - timedelta(days=30)
+        increment_daily_log(user_male, prayer_types["bomdod"], seed_day, "hazar_missed")
+        increment_daily_log(user_male, prayer_types["bomdod"], today, "hazar_completed")
+        for _ in range(5):
+            increment_daily_log(user_male, prayer_types["bomdod"], today, "hazar_missed")
+        assert current_streak(user_male) == 0
+
+    def test_net_negative_day_breaks_an_existing_streak(self, prayer_types, user_male):
+        today = timezone.localdate()
+        two_days_ago = today - timedelta(days=2)
+        yesterday = today - timedelta(days=1)
+        seed_day = today - timedelta(days=30)
+        for _ in range(6):
+            increment_daily_log(user_male, prayer_types["bomdod"], seed_day, "hazar_missed")
+        for day in (two_days_ago, today):
+            increment_daily_log(user_male, prayer_types["bomdod"], day, "hazar_completed")
+            increment_daily_log(user_male, prayer_types["bomdod"], day, "hazar_completed")
+        # Yesterday nets to zero -> breaks the streak even though both
+        # neighbouring days were net-positive.
+        increment_daily_log(user_male, prayer_types["bomdod"], yesterday, "hazar_missed")
+        increment_daily_log(user_male, prayer_types["bomdod"], yesterday, "hazar_completed")
+        assert current_streak(user_male) == 1
+
+    def test_streak_resumes_after_a_net_paydown_day(self, prayer_types, user_male):
+        """A bad day doesn't poison the streak forever — the very next
+        net-positive day restarts counting from 1 (current_streak only
+        measures the trailing run ending today)."""
+        today = timezone.localdate()
+        yesterday = today - timedelta(days=1)
+        increment_daily_log(user_male, prayer_types["bomdod"], yesterday, "hazar_missed")
+        increment_daily_log(user_male, prayer_types["bomdod"], today, "hazar_completed")
+        increment_daily_log(user_male, prayer_types["bomdod"], today, "hazar_completed")
+        assert current_streak(user_male) == 1
+
+    def test_streak_is_rakat_weighted(self, prayer_types, user_male):
+        """1 missed instance vs 1 completed instance would net to zero under
+        raw instance counting, but Peshin (4 rakat) outweighs Bomdod (2
+        rakat), so the net here is rakat-positive."""
+        today = timezone.localdate()
+        seed_day = today - timedelta(days=30)
+        increment_daily_log(user_male, prayer_types["peshin"], seed_day, "hazar_missed")
+        # 1 peshin completed (4 rakat) vs 1 bomdod missed (2 rakat) -> net +2.
+        increment_daily_log(user_male, prayer_types["peshin"], today, "hazar_completed")
+        increment_daily_log(user_male, prayer_types["bomdod"], today, "hazar_missed")
+        assert current_streak(user_male) == 1

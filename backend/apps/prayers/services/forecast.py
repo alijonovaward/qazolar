@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from django.db.models import F
+from django.db.models import F, Sum
 from django.utils import timezone
 
 from apps.accounts.models import User
@@ -56,17 +56,33 @@ def forecast_days_remaining(
 
 
 def current_streak(user: User) -> int:
+    """Consecutive days (ending today) where the remaining qazo rakat total
+    strictly *decreased* from the day before — not just "logged something".
+    Completing 1 rakat's worth while also logging 5 new missed rakats the
+    same day leaves you further behind than yesterday, not caught up, so
+    that day can't extend a streak; a day with no net change (e.g. a +1/-1
+    on the same prayer) is the same story. Only a real net pay-down counts,
+    matching remaining_rakats' rakat-weighting (a Peshin qazo isn't the same
+    "amount" as a Bomdod qazo)."""
     today = timezone.localdate()
-    active_dates = set(
-        DailyLog.objects.filter(user=user)
-        .annotate(completed=F("hazar_completed_count") + F("qasr_completed_count"))
-        .filter(completed__gt=0)
-        .values_list("date", flat=True)
-        .distinct()
-    )
+    net_rakats_by_date = {
+        row["date"]: row["net_change"] or 0
+        for row in (
+            DailyLog.objects.filter(user=user)
+            .values("date")
+            .annotate(
+                net_change=Sum(
+                    F("hazar_completed_count") * F("prayer_type__rakat_count")
+                    + F("qasr_completed_count") * F("prayer_type__qasr_rakat_count")
+                    - F("hazar_missed_count") * F("prayer_type__rakat_count")
+                    - F("qasr_missed_count") * F("prayer_type__qasr_rakat_count")
+                )
+            )
+        )
+    }
     streak = 0
     day = today
-    while day in active_dates:
+    while net_rakats_by_date.get(day, 0) > 0:
         streak += 1
         day -= timedelta(days=1)
     return streak
