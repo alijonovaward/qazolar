@@ -127,13 +127,14 @@ class SharedHabitSerializer(LeaderboardMixin, serializers.ModelSerializer):
         ]
 
     def get_participant_count(self, obj: SharedHabit) -> int:
-        # Overrides LeaderboardMixin's "count__gt=0" version on purpose —
-        # membership here is an explicit join/accept step (see
+        # Overrides LeaderboardMixin's "active contributors only" version on
+        # purpose — membership here is an explicit join/accept step (see
         # SharedHabitMember), so someone who joined but hasn't logged
         # anything yet is still a real participant, unlike Zikr/
         # CollectiveHabit where a contribution row only exists once you've
-        # actually tapped.
-        return obj.members.count()
+        # actually tapped. Reads from the same prefetched/cached dataset as
+        # the rest of the mixin instead of issuing its own obj.members.count().
+        return len(self._all_members(obj))
 
     def get_is_creator(self, obj: SharedHabit) -> bool:
         request = self.context.get("request")

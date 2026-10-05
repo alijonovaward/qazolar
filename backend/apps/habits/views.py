@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, status
@@ -9,7 +9,14 @@ from rest_framework.views import APIView
 
 from apps.core.queryset_utils import excluding_stale_completions
 
-from .models import CollectiveHabit, Habit, SharedHabit, SharedHabitInvite, SharedHabitMember
+from .models import (
+    CollectiveHabit,
+    Habit,
+    SharedHabit,
+    SharedHabitInvite,
+    SharedHabitMember,
+    UserCollectiveHabitCount,
+)
 from .serializers import (
     CollectiveHabitSerializer,
     CollectiveHabitSyncSerializer,
@@ -101,7 +108,16 @@ class CollectiveHabitListView(generics.ListAPIView):
     pagination_class = None
 
     def get_queryset(self):
-        return excluding_stale_completions(CollectiveHabit.objects.filter(is_active=True))
+        # One extra query for the whole list, not one per habit — feeds
+        # LeaderboardMixin's prefetch_attr, see apps/core/serializers.py.
+        member_prefetch = Prefetch(
+            "user_counts",
+            queryset=UserCollectiveHabitCount.objects.select_related("user"),
+            to_attr="prefetched_members",
+        )
+        return excluding_stale_completions(
+            CollectiveHabit.objects.filter(is_active=True)
+        ).prefetch_related(member_prefetch)
 
 
 class CollectiveHabitSyncView(APIView):
@@ -125,10 +141,21 @@ class SharedHabitListCreateView(generics.ListCreateAPIView):
     pagination_class = None
 
     def get_queryset(self):
+        # One extra query for the whole list, not one per habit — feeds
+        # LeaderboardMixin's prefetch_attr, see apps/core/serializers.py.
+        # member_related_name="members" here, so this must prefetch "members"
+        # (all join rows, not just active contributors — SharedHabitSerializer
+        # needs the full set for its participant_count override).
+        member_prefetch = Prefetch(
+            "members",
+            queryset=SharedHabitMember.objects.select_related("user"),
+            to_attr="prefetched_members",
+        )
         return (
             SharedHabit.objects.filter(members__user=self.request.user, is_active=True)
             .distinct()
             .order_by("-created_at")
+            .prefetch_related(member_prefetch)
         )
 
     def get_serializer_class(self):

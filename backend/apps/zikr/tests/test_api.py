@@ -239,3 +239,37 @@ class TestZikrSync:
         sync(client_a, zikr.id, 10)  # no-op — already at target
         zikr.refresh_from_db()
         assert zikr.completed_at == first_completed_at
+
+
+class TestZikrListQueryCount:
+    def _query_count(self, client):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        with CaptureQueriesContext(connection) as ctx:
+            response = client.get("/api/zikr/")
+        assert response.status_code == 200
+        return len(ctx.captured_queries), response
+
+    def test_query_count_does_not_grow_with_list_size(self, client_a, user_a, user_b):
+        def make_zikr(i):
+            z = Zikr.objects.create(
+                arabic_text="x", transliteration=f"z{i}", translation="t", target_count=1000
+            )
+            UserZikrCount.objects.create(zikr=z, user=user_a, count=5)
+            UserZikrCount.objects.create(zikr=z, user=user_b, count=9)
+            return z
+
+        make_zikr(0)
+        baseline, _ = self._query_count(client_a)
+        for i in range(1, 6):
+            make_zikr(i)
+        with_six, response = self._query_count(client_a)
+
+        assert with_six == baseline
+        assert len(response.data) == 6
+        first = response.data[0]
+        assert first["participant_count"] == 2
+        assert first["my_count"] == 5
+        assert first["my_rank"] == 2
+        assert [c["count"] for c in first["top_contributors"]] == [9, 5]

@@ -1,3 +1,4 @@
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.response import Response
@@ -5,7 +6,7 @@ from rest_framework.views import APIView
 
 from apps.core.queryset_utils import excluding_stale_completions
 
-from .models import Zikr
+from .models import UserZikrCount, Zikr
 from .serializers import ZikrSerializer, ZikrSyncSerializer
 from .services import sync_zikr_count
 from .throttles import ZikrSyncThrottle
@@ -21,7 +22,16 @@ class ZikrListView(generics.ListAPIView):
     pagination_class = None
 
     def get_queryset(self):
-        return excluding_stale_completions(Zikr.objects.filter(is_active=True))
+        # One extra query for the whole list (not one per zikr) — feeds
+        # LeaderboardMixin's prefetch_attr, see apps/core/serializers.py.
+        member_prefetch = Prefetch(
+            "user_counts",
+            queryset=UserZikrCount.objects.select_related("user"),
+            to_attr="prefetched_members",
+        )
+        return excluding_stale_completions(Zikr.objects.filter(is_active=True)).prefetch_related(
+            member_prefetch
+        )
 
 
 class ZikrSyncView(APIView):
