@@ -143,3 +143,36 @@ def remaining_trend(user: User, period: str, prayer_type_code: str = "all") -> l
         series.append({"bucket": bucket_date, "remaining": value})
 
     return series
+
+
+def activity_trend(user: User, period: str, prayer_type_code: str = "all") -> list[dict]:
+    """Completed-qazo count per bucket within the *same* fixed trailing
+    window as remaining_trend (see TREND_WINDOWS) — previously this only
+    changed bucket granularity (day/week/month/year) while always summing
+    the user's entire history, so every period tab showed the same grand
+    total, just regrouped differently; switching to "Hafta" looked like it
+    should mean "last week", not "everything, bucketed weekly".
+
+    Zero-filled like habits.services.habit_trend — a bucket with no
+    completions is an honest 0 bar, not a missing one."""
+    config = TREND_WINDOWS[period]
+    granularity = config["granularity"]
+    trunc_fn = TRUNC_FUNCS[granularity]
+
+    today = timezone.localdate()
+    window_start = today - timedelta(days=config["window_days"] - 1)
+
+    qs = DailyLog.objects.filter(user=user, date__gte=window_start, date__lte=today)
+    if prayer_type_code != "all":
+        qs = qs.filter(prayer_type__code=prayer_type_code)
+
+    buckets = qs.annotate(bucket=trunc_fn("date")).values("bucket").annotate(
+        total_completed=Sum(F("hazar_completed_count") + F("qasr_completed_count"))
+    )
+    totals_by_bucket = {row["bucket"]: row["total_completed"] or 0 for row in buckets}
+
+    full_sequence = _bucket_sequence(granularity, window_start, today)
+    return [
+        {"bucket": bucket_date, "total_completed": totals_by_bucket.get(bucket_date, 0)}
+        for bucket_date in full_sequence
+    ]

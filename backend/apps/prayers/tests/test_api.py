@@ -387,6 +387,47 @@ class TestRemainingTrendEndpoint:
         assert response.data[-1]["remaining"] == 2
 
 
+class TestActivityStatsEndpoint:
+    def test_different_period_tabs_give_different_totals(self, prayer_types, client_a, user_a):
+        # The actual bug report: every tab summed the user's *entire*
+        # history regardless of period, just regrouped into bigger
+        # buckets, so "Hafta" and "Yil" always showed the same grand
+        # total. Activity far outside a short window must not count
+        # toward it.
+        today = timezone.localdate()
+        long_ago = today - timedelta(days=100)
+        increment_daily_log(user_a, prayer_types["bomdod"], long_ago, "hazar_missed")
+        increment_daily_log(user_a, prayer_types["bomdod"], long_ago, "hazar_completed")
+        increment_daily_log(user_a, prayer_types["bomdod"], today, "hazar_missed")
+        increment_daily_log(user_a, prayer_types["bomdod"], today, "hazar_completed")
+
+        week_total = sum(row["total_completed"] for row in client_a.get("/api/stats/?period=week").data)
+        year_total = sum(row["total_completed"] for row in client_a.get("/api/stats/?period=year").data)
+        assert week_total == 1  # only today's completion is within the last 7 days
+        assert year_total == 2  # both completions are within the last 365 days
+
+    def test_days_with_no_completions_are_zero_filled_not_skipped(self, prayer_types, client_a, user_a):
+        today = timezone.localdate()
+        increment_daily_log(user_a, prayer_types["bomdod"], today, "hazar_missed")
+        increment_daily_log(user_a, prayer_types["bomdod"], today, "hazar_completed")
+
+        response = client_a.get("/api/stats/?period=week")
+        assert len(response.data) == 7  # a full week of buckets, not just the one active day
+        assert response.data[-1]["total_completed"] == 1
+        assert response.data[0]["total_completed"] == 0
+
+    def test_week_window_is_the_last_7_days(self, prayer_types, client_a):
+        response = client_a.get("/api/stats/?period=week")
+        today = timezone.localdate()
+        assert len(response.data) == 7
+        assert response.data[0]["bucket"] == today - timedelta(days=6)
+        assert response.data[-1]["bucket"] == today
+
+    def test_rejects_bad_period(self, prayer_types, client_a):
+        response = client_a.get("/api/stats/?period=bogus")
+        assert response.status_code == 400
+
+
 class TestForecastEndpoint:
     def test_rate_is_averaged_over_the_last_7_days_not_30(self, prayer_types, client_a, user_a):
         # Bomdod = 2 rakat. One completion today: a 30-day window would give

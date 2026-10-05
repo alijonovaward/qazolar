@@ -1,4 +1,3 @@
-from django.db.models import F, Sum
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, status, viewsets
@@ -20,7 +19,7 @@ from .serializers import (
 from .services.daily_log import increment_daily_log
 from .services.forecast import current_streak, daily_rakat_rate, forecast_days_remaining, remaining_rakats
 from .services.setup import apply_setup
-from .services.stats import TREND_WINDOWS, TRUNC_FUNCS, remaining_trend
+from .services.stats import TREND_WINDOWS, activity_trend, remaining_trend
 
 
 class PrayerTypeListView(generics.ListAPIView):
@@ -145,29 +144,20 @@ class DailyGoalTodayView(APIView):
 
 
 class StatsView(APIView):
+    """Completed-qazo activity per bucket, windowed the same way as
+    /stats/remaining-trend/ (see activity_trend) — each period tab is a
+    fixed recent slice (e.g. "Hafta" = last 7 days), not the user's entire
+    history just regrouped into bigger buckets."""
+
     def get(self, request):
         period = request.query_params.get("period", "week")
-        trunc_fn = TRUNC_FUNCS.get(period)
-        if trunc_fn is None:
+        if period not in TREND_WINDOWS:
             return Response(
                 {"detail": "period 'day', 'week', 'month' yoki 'year' bo'lishi kerak"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        qs = DailyLog.objects.filter(user=request.user)
         prayer_type_code = request.query_params.get("prayer_type", "all")
-        if prayer_type_code != "all":
-            qs = qs.filter(prayer_type__code=prayer_type_code)
-
-        buckets = (
-            qs.annotate(bucket=trunc_fn("date"))
-            .values("bucket")
-            .annotate(
-                total_completed=Sum(F("hazar_completed_count") + F("qasr_completed_count"))
-            )
-            .order_by("bucket")
-        )
-        return Response(list(buckets))
+        return Response(activity_trend(request.user, period, prayer_type_code))
 
 
 class RemainingTrendView(APIView):
