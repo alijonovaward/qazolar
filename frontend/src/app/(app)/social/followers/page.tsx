@@ -25,7 +25,7 @@ export default function FollowersPage() {
         <div className="flex flex-col gap-2 rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
           <ul className="flex flex-col gap-3">
             {results.map((relation) => (
-              <li key={relation.id} className="flex flex-wrap items-center justify-between gap-2">
+              <li key={relation.id} className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-3">
                   <Avatar label={displayName(relation.follower)} />
                   <span className="min-w-0 truncate text-sm">{displayName(relation.follower)}</span>

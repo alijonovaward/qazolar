@@ -171,7 +171,7 @@ export default function SocialPage() {
           <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">Kelgan so&apos;rovlar</h2>
           <ul className="flex flex-col gap-3">
             {incomingResults.map((request) => (
-              <li key={request.id} className="flex flex-wrap items-center justify-between gap-2">
+              <li key={request.id} className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-3">
                   <Avatar label={displayName(request.follower)} />
                   <span className="min-w-0 truncate text-sm">{displayName(request.follower)}</span>

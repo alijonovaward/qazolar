@@ -27,7 +27,7 @@ export default function FollowingPage() {
         <div className="flex flex-col gap-2 rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
           <ul className="flex flex-col gap-3">
             {results.map((relation) => (
-              <li key={relation.id} className="flex flex-wrap items-center justify-between gap-2">
+              <li key={relation.id} className="flex items-center justify-between gap-2">
                 <Link
                   href={`/social/following/${relation.id}`}
                   className="flex min-w-0 flex-1 items-center gap-3"
