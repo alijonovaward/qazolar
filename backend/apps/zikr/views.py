@@ -34,6 +34,16 @@ class ZikrListView(generics.ListAPIView):
         )
 
 
+class ZikrCompletedCountView(APIView):
+    """Lifetime count of fully-finished zikrs — a separate endpoint because
+    a completed zikr drops out of ZikrListView a day after completed_at
+    (see excluding_stale_completions), so the list itself can't answer
+    "how many have we ever finished"."""
+
+    def get(self, request):
+        return Response({"completed_count": Zikr.objects.filter(completed_at__isnull=False).count()})
+
+
 class ZikrSyncView(APIView):
     throttle_classes = [ZikrSyncThrottle]
 

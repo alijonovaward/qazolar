@@ -18,6 +18,13 @@ export function useZikrList() {
   });
 }
 
+export function useZikrCompletedCount() {
+  return useQuery({
+    queryKey: ["zikr", "completed-count"],
+    queryFn: () => apiClient.get<{ completed_count: number }>("/zikr/completed-count/"),
+  });
+}
+
 export function useSyncZikr() {
   const queryClient = useQueryClient();
 

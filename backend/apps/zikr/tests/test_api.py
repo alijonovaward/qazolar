@@ -137,6 +137,30 @@ class TestZikrTopContributors:
         assert response.data[0]["my_rank"] == 1
 
 
+class TestZikrCompletedCount:
+    def test_zero_when_nothing_completed(self, client_a, zikr):
+        response = client_a.get("/api/zikr/completed-count/")
+        assert response.status_code == 200
+        assert response.data == {"completed_count": 0}
+
+    def test_counts_completed_regardless_of_active_or_stale(self, client_a):
+        Zikr.objects.create(
+            arabic_text="x", transliteration="done1", translation="t",
+            target_count=10, current_count=10, completed_at=timezone.now(),
+        )
+        Zikr.objects.create(
+            arabic_text="x", transliteration="done2", translation="t",
+            target_count=10, current_count=10, completed_at=timezone.now() - timedelta(days=30),
+            is_active=False,
+        )
+        Zikr.objects.create(
+            arabic_text="x", transliteration="in_progress", translation="t",
+            target_count=10, current_count=5,
+        )
+        response = client_a.get("/api/zikr/completed-count/")
+        assert response.data == {"completed_count": 2}
+
+
 class TestZikrSync:
     def test_increments_the_collective_total(self, client_a, zikr):
         response = sync(client_a, zikr.id, 50)

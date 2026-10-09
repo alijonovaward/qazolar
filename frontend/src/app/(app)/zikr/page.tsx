@@ -3,14 +3,22 @@
 import Link from "next/link";
 
 import { formatCount, formatDate } from "@/components/zikr/utils";
-import { useZikrList } from "@/hooks/useZikr";
+import { useZikrCompletedCount, useZikrList } from "@/hooks/useZikr";
 
 export default function ZikrListPage() {
   const { data: zikrs, isLoading } = useZikrList();
+  const { data: completedCount } = useZikrCompletedCount();
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4">
-      <h1 className="text-xl font-semibold">Zikrlar</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Zikrlar</h1>
+        {!!completedCount?.completed_count && (
+          <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-400">
+            🏆 {formatCount(completedCount.completed_count)} ta yakunlangan
+          </span>
+        )}
+      </div>
 
       {isLoading ? (
         <p className="text-sm text-neutral-500">Yuklanmoqda...</p>
