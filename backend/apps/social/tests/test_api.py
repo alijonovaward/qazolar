@@ -189,6 +189,12 @@ class TestFollowingVisibility:
         assert profile["visibility"] == "percent_only"
         assert profile["percent_complete"] == 40.0
         assert "records" not in profile
+        # Same shape as the dashboard's own ForecastCard — see
+        # services.visible_profile.
+        assert profile["remaining_rakats"] == 12  # 6 unpaid bomdod * 2 rakat
+        assert "daily_rakat_rate" in profile
+        assert "forecast_days_remaining" in profile
+        assert "forecast_years_remaining" in profile
 
     def test_full_shows_per_prayer_records(self, prayer_types, client_a, client_b, user_a, user_b):
         user_b.follower_visibility = User.VisibilityLevel.FULL

@@ -1,5 +1,6 @@
 "use client";
 
+import { ForecastCard } from "@/components/prayer/ForecastCard";
 import { RemainingTrendChart } from "@/components/stats/RemainingTrendChart";
 import { useFolloweeRemainingTrend } from "@/hooks/useSocial";
 import type { QazoRecord } from "@/types/prayer";
@@ -65,6 +66,21 @@ export function FolloweeProfileView({
           </span>
         )}
       </div>
+
+      {/* The exact same ForecastCard the dashboard shows for the current
+          user — always present once percent_complete is (both sit at the
+          same visibility tier in services.visible_profile), so no extra
+          null-tier guard beyond the top-level "none" check above. */}
+      {profile.daily_rakat_rate != null && profile.remaining_rakats != null && (
+        <ForecastCard
+          forecast={{
+            daily_rakat_rate: profile.daily_rakat_rate,
+            remaining_rakats: profile.remaining_rakats,
+            forecast_days_remaining: profile.forecast_days_remaining ?? null,
+            forecast_years_remaining: profile.forecast_years_remaining ?? null,
+          }}
+        />
+      )}
 
       {/* The exact same chart /stats uses for the current user — not a
           simplified/de-emphasized variant, just this component pointed at

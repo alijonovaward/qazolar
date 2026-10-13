@@ -30,6 +30,10 @@ export interface FolloweeProfile {
   visibility: VisibilityLevel;
   percent_complete?: number;
   current_streak?: number;
+  daily_rakat_rate?: number;
+  remaining_rakats?: number;
+  forecast_days_remaining?: number | null;
+  forecast_years_remaining?: number | null;
   records?: QazoRecord[];
 }
 
