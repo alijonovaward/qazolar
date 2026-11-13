@@ -17,21 +17,21 @@ DEFAULT_WINDOW_DAYS = 7
 
 
 def daily_rakat_rate(user: User, window_days: int = DEFAULT_WINDOW_DAYS) -> float:
-    """Rakats completed per calendar day over the trailing window (not just active
-    days) — avoids one big catch-up day inflating the rate. Hazar and qasr
-    completions are each valued at their own rakat count, never a per-prayer
-    special case."""
+    """Net rakats paid down per calendar day over the trailing window (not just active
+    days) — completed rakats minus missed rakats. Hazar and qasr
+    completions and misses are each valued at their own rakat count, never a
+    per-prayer special case."""
     today = timezone.localdate()
     window_start = today - timedelta(days=window_days - 1)
     logs = DailyLog.objects.filter(
         user=user, date__gte=window_start, date__lte=today
     ).select_related("prayer_type")
-    total_rakats = sum(
-        log.hazar_completed_count * log.prayer_type.rakat_count
-        + log.qasr_completed_count * log.prayer_type.qasr_rakat_count
+    total_net_rakats = sum(
+        (log.hazar_completed_count - log.hazar_missed_count) * log.prayer_type.rakat_count
+        + (log.qasr_completed_count - log.qasr_missed_count) * log.prayer_type.qasr_rakat_count
         for log in logs
     )
-    return total_rakats / window_days
+    return total_net_rakats / window_days
 
 
 def remaining_rakats(user: User) -> int:

@@ -226,24 +226,54 @@ class TestForecast:
 
     def test_daily_rakat_rate_weights_by_rakat_not_prayer_count(self, prayer_types, user_male):
         # 2 hazar Bomdod completions (2 rakat each = 4) over a 1-day window ending today
+        InitialQazoSetup.objects.create(
+            user=user_male, prayer_type=prayer_types["bomdod"],
+            status=InitialQazoSetup.Status.OWES_QAZO, hazar_manual_override_count=10,
+        )
+        apply_setup(InitialQazoSetup.objects.get(user=user_male))
+
         today = timezone.localdate()
-        for _ in range(2):
-            increment_daily_log(user_male, prayer_types["bomdod"], today, "hazar_missed")
         for _ in range(2):
             increment_daily_log(user_male, prayer_types["bomdod"], today, "hazar_completed")
         rate_bomdod = daily_rakat_rate(user_male, window_days=1)
         assert rate_bomdod == 4.0
 
     def test_qasr_completions_are_valued_at_the_shortened_rakat_count(self, prayer_types, user_male, user_female):
+        InitialQazoSetup.objects.create(
+            user=user_male, prayer_type=prayer_types["peshin"],
+            status=InitialQazoSetup.Status.OWES_QAZO, hazar_manual_override_count=10,
+        )
+        apply_setup(InitialQazoSetup.objects.get(user=user_male))
+        InitialQazoSetup.objects.create(
+            user=user_female, prayer_type=prayer_types["peshin"],
+            status=InitialQazoSetup.Status.OWES_QAZO, qasr_manual_override_count=10,
+        )
+        apply_setup(InitialQazoSetup.objects.get(user=user_female))
+
         today = timezone.localdate()
         for _ in range(2):
-            increment_daily_log(user_male, prayer_types["peshin"], today, "hazar_missed")
             increment_daily_log(user_male, prayer_types["peshin"], today, "hazar_completed")
         for _ in range(2):
-            increment_daily_log(user_female, prayer_types["peshin"], today, "qasr_missed")
             increment_daily_log(user_female, prayer_types["peshin"], today, "qasr_completed")
         assert daily_rakat_rate(user_male, window_days=1) == 8.0  # 2 * 4 rakat
         assert daily_rakat_rate(user_female, window_days=1) == 4.0  # 2 * 2 rakat
+
+    def test_daily_rakat_rate_accounts_for_missed_rakats(self, prayer_types, user_male):
+        # 2 hazar Bomdod completed (4 rakat) and 1 hazar Bomdod missed (2 rakat)
+        # -> net rate = (4 - 2) / 1 = 2.0 rakat/day over 1-day window
+        InitialQazoSetup.objects.create(
+            user=user_male, prayer_type=prayer_types["bomdod"],
+            status=InitialQazoSetup.Status.OWES_QAZO, hazar_manual_override_count=10,
+        )
+        apply_setup(InitialQazoSetup.objects.get(user=user_male))
+
+        today = timezone.localdate()
+        for _ in range(2):
+            increment_daily_log(user_male, prayer_types["bomdod"], today, "hazar_completed")
+        increment_daily_log(user_male, prayer_types["bomdod"], today, "hazar_missed")
+
+        rate = daily_rakat_rate(user_male, window_days=1)
+        assert rate == 2.0
 
     def test_worked_example_matches_hand_calculation(self, prayer_types, user_male):
         # Anchored on the real "today" (daily_rakat_rate/forecast_days_remaining read
@@ -303,8 +333,8 @@ class TestForecast:
             increment_daily_log(user_male, shom, window_start + timedelta(days=i), "hazar_completed")
 
         rate = daily_rakat_rate(user_male, window_days=30)
-        # peshin 20*4=80, asr 4*2+6*4=32, xufton 15*2=30, shom 5*3=15 -> 157
-        assert rate == pytest.approx(157 / 30, rel=1e-6)
+        # peshin 20*4=80, asr (4-4)*2+6*4=24, xufton (15-15)*2=0, shom 5*3=15 -> 119 net rakats
+        assert rate == pytest.approx(119 / 30, rel=1e-6)
 
         remaining = remaining_rakats(user_male)
         # peshin hazar (30-20)*4=40

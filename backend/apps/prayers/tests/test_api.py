@@ -430,10 +430,14 @@ class TestActivityStatsEndpoint:
 
 class TestForecastEndpoint:
     def test_rate_is_averaged_over_the_last_7_days_not_30(self, prayer_types, client_a, user_a):
-        # Bomdod = 2 rakat. One completion today: a 30-day window would give
+        # Bomdod = 2 rakat. One net completion today: a 30-day window would give
         # 2/30 (~0.067), a 7-day window gives 2/7 (~0.286) — distinct enough
         # to tell which one the endpoint is actually using.
-        increment_daily_log(user_a, prayer_types["bomdod"], timezone.localdate(), "hazar_missed")
+        InitialQazoSetup.objects.create(
+            user=user_a, prayer_type=prayer_types["bomdod"],
+            status=InitialQazoSetup.Status.OWES_QAZO, hazar_manual_override_count=10,
+        )
+        apply_setup(InitialQazoSetup.objects.get(user=user_a))
         increment_daily_log(user_a, prayer_types["bomdod"], timezone.localdate(), "hazar_completed")
 
         response = client_a.get("/api/stats/forecast/")
